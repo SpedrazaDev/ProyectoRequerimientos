@@ -1,0 +1,17 @@
+/* App.css */
+main { min-height: calc(100vh - 80px); }
+
+.loading-screen {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; height: 100vh;
+  background: linear-gradient(135deg, var(--dark) 0%, var(--dark-3) 100%);
+  color: var(--gold); gap: 1.25rem;
+}
+.loading-screen .spinner {
+  width: 52px; height: 52px;
+  border: 3px solid rgba(201,168,76,.18);
+  border-top-color: var(--gold);
+  border-radius: 50%; animation: spin .8s linear infinite;
+}
+.loading-screen p { font-family: var(--font-display); font-size: 1rem; opacity: .75; letter-spacing: .08em; }
+@keyframes spin { to { transform: rotate(360deg); } }

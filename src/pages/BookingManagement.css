@@ -1,0 +1,87 @@
+/* BookingManagement.css */
+.bm-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 2rem; gap: 1rem; flex-wrap: wrap; }
+
+/* Tabs */
+.bm-tabs {
+  display: flex; gap: .25rem; flex-wrap: wrap;
+  margin-bottom: 2rem; border-bottom: 2px solid var(--gray-200); padding-bottom: 0;
+}
+.bm-tab {
+  display: flex; align-items: center; gap: .35rem; padding: .75rem 1.2rem;
+  background: none; border: none; border-bottom: 2px solid transparent; margin-bottom: -2px;
+  font-size: .82rem; font-weight: 700; letter-spacing: .05em; color: var(--gray-400);
+  cursor: pointer; transition: var(--transition);
+}
+.bm-tab:hover { color: var(--dark-2); }
+.bm-tab--active { color: var(--gold-dark); border-bottom-color: var(--gold); }
+
+.bm-tab-count {
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--gray-200); color: var(--gray-600);
+  font-size: .68rem; font-weight: 700; border-radius: var(--radius-full);
+  min-width: 20px; height: 20px; padding: 0 5px;
+}
+.bm-tab--active .bm-tab-count { background: rgba(201,168,76,.15); color: var(--gold-dark); }
+
+/* Lista y tarjetas */
+.bm-list { display: flex; flex-direction: column; gap: 1.25rem; }
+
+.bm-card {
+  background: var(--white); border-radius: var(--radius-xl); padding: 1.75rem;
+  box-shadow: var(--shadow-sm); border-left: 5px solid var(--gray-200); transition: var(--transition);
+}
+.bm-card:hover { box-shadow: var(--shadow); }
+.bm-card--pending   { border-left-color: var(--warning); }
+.bm-card--confirmed { border-left-color: var(--success); }
+.bm-card--cancelled { border-left-color: var(--gray-400); opacity: .8; }
+
+.bm-card__head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  margin-bottom: 1.25rem; gap: 1rem; flex-wrap: wrap;
+}
+.bm-card__client { display: flex; align-items: center; gap: .85rem; }
+.client-avatar {
+  width: 46px; height: 46px; border-radius: 50%; background: var(--dark-2); color: var(--gold);
+  font-family: var(--font-display); font-size: 1.2rem; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.bm-card__client strong { display: block; font-size: .92rem; color: var(--dark-2); }
+.bm-card__client small  { font-size: .76rem; color: var(--gray-400); }
+.bm-card__meta  { display: flex; flex-direction: column; align-items: flex-end; gap: .4rem; }
+.bm-date        { font-size: .72rem; color: var(--gray-400); }
+
+.bm-card__info {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;
+  padding: 1rem 0; border-top: 1px solid var(--gray-200); border-bottom: 1px solid var(--gray-200); margin-bottom: 1rem;
+}
+.bm-info-item  { display: flex; flex-direction: column; gap: .18rem; }
+.bm-info-label { font-size: .67rem; text-transform: uppercase; letter-spacing: .12em; font-weight: 700; color: var(--gray-400); }
+.bm-info-item span, .bm-info-item a { font-size: .86rem; color: var(--dark-2); }
+.bm-phone { color: var(--gold-dark) !important; font-weight: 700; text-decoration: none; }
+.bm-phone:hover { color: var(--gold) !important; }
+
+.bm-message    { margin-bottom: 1rem; }
+.bm-toggle {
+  background: none; border: none; font-size: .75rem; color: var(--gray-400);
+  cursor: pointer; font-weight: 700; padding: 0; transition: var(--transition);
+}
+.bm-toggle:hover { color: var(--gold-dark); }
+.bm-message-text {
+  margin-top: .55rem; font-size: .86rem; color: var(--gray-600); font-style: italic;
+  background: var(--cream); padding: .75rem 1rem; border-radius: var(--radius);
+  border-left: 3px solid var(--gold); line-height: 1.55;
+}
+
+.bm-card__actions { display: flex; justify-content: space-between; gap: .75rem; flex-wrap: wrap; }
+.bm-action-group  { display: flex; gap: .45rem; flex-wrap: wrap; }
+
+@media (max-width: 768px) {
+  .bm-card__info { grid-template-columns: 1fr 1fr; }
+  .bm-card__actions { flex-direction: column; }
+  .bm-action-group { width: 100%; }
+}
+@media (max-width: 480px) {
+  .bm-card__head { flex-direction: column; }
+  .bm-card__meta { align-items: flex-start; }
+  .bm-card__info { grid-template-columns: 1fr; }
+}
