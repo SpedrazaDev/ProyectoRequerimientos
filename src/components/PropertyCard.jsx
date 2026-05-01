@@ -1,24 +1,18 @@
 // src/components/PropertyCard.jsx
-// ─────────────────────────────────────────────────────────────────────
-//  Tarjeta de propiedad para mostrar en el catálogo.
-//  Recibe un objeto "property" como prop con todos los datos.
-// ─────────────────────────────────────────────────────────────────────
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Home, Building2, Trees, Store, Bed, Bath, Maximize, Car, MapPin } from 'lucide-react';
 import './PropertyCard.css';
 
-// Formateador de precios (ej: 250000 → $250,000)
 const formatPrice = (price) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
     .format(price);
 
-// Íconos por tipo de propiedad
 const TYPE_ICONS = {
-  Casa:        '🏠',
-  Apartamento: '🏢',
-  Terreno:     '🌿',
-  Comercial:   '🏪',
+  Casa:        <Home size={16} />,
+  Apartamento: <Building2 size={16} />,
+  Terreno:     <Trees size={16} />,
+  Comercial:   <Store size={16} />,
 };
 
 function PropertyCard({ property }) {
@@ -30,7 +24,7 @@ function PropertyCard({ property }) {
     <article className="prop-card" onClick={goToDetail} role="button" tabIndex={0}
       onKeyDown={(e) => e.key === 'Enter' && goToDetail()}
     >
-      {/* ── Imagen ── */}
+      {/* Imagen */}
       <div className="prop-card__image-wrap">
         {property.imageUrl ? (
           <img
@@ -38,61 +32,57 @@ function PropertyCard({ property }) {
             alt={property.title}
             className="prop-card__image"
             loading="lazy"
+            decoding="async"
           />
         ) : (
           <div className="prop-card__image-placeholder">
-            <span>📷</span>
+            <Home size={48} strokeWidth={1.5} />
             <p>Sin imagen</p>
           </div>
         )}
 
         {/* Badge de tipo */}
         <div className="prop-card__type-badge">
-          <span>{TYPE_ICONS[property.type] || '🏠'}</span>
+          {TYPE_ICONS[property.type] || <Home size={16} />}
           {property.type}
         </div>
       </div>
 
-      {/* ── Contenido ── */}
+      {/* Contenido */}
       <div className="prop-card__body">
-        {/* Precio */}
         <p className="prop-card__price">{formatPrice(property.price)}</p>
-
-        {/* Título */}
         <h3 className="prop-card__title">{property.title}</h3>
 
-        {/* Ubicación */}
         <p className="prop-card__location">
-          <span className="location-icon">📍</span>
+          <MapPin size={14} />
           {property.location}
         </p>
 
-        {/* Separador dorado */}
         <div className="prop-card__divider" />
 
         {/* Características */}
         <div className="prop-card__features">
           {property.bedrooms > 0 && (
             <span className="feature-item" title="Habitaciones">
-              <span className="feature-icon">🛏</span>
+              <Bed size={14} />
               {property.bedrooms} hab.
             </span>
           )}
           {property.bathrooms > 0 && (
             <span className="feature-item" title="Baños">
-              <span className="feature-icon">🚿</span>
+              <Bath size={14} />
               {property.bathrooms} baños
             </span>
           )}
           {property.area > 0 && (
             <span className="feature-item" title="Área">
-              <span className="feature-icon">📐</span>
+              <Maximize size={14} />
               {property.area} m²
             </span>
           )}
           {property.garage > 0 && (
             <span className="feature-item" title="Garage">
-              <span className="feature-icon">🚗</span>
+              <Car size={14} />
               {property.garage} gar.
             </span>
           )}

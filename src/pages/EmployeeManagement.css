@@ -1,0 +1,24 @@
+/* EmployeeManagement.css - Usa los mismos estilos de PropertyManagement */
+/* Solo importa los estilos de PropertyManagement.css */
+@import './PropertyManagement.css';
+
+/* Personalizaciones específicas */
+.email-link {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  color: var(--gold);
+  text-decoration: none;
+  font-size: .85rem;
+  transition: var(--transition);
+}
+
+.email-link:hover {
+  color: var(--gold-light);
+  text-decoration: underline;
+}
+
+.date-cell {
+  font-size: .82rem;
+  color: rgba(255,255,255,.45);
+}

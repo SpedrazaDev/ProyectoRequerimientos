@@ -1,22 +1,15 @@
 // src/pages/PropertyDetail.jsx
-// ─────────────────────────────────────────────────────────────────────
-//  Detalle de una propiedad específica.
-//  • Carga la propiedad por ID desde Firestore
-//  • Muestra toda la información de la propiedad
-//  • Formulario para solicitar una cita (guarda en Firestore)
-// ─────────────────────────────────────────────────────────────────────
-
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { doc, getDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
+import { ChevronLeft, Home, MapPin, Bed, Bath, Maximize, Car, Phone, Mail, Lock, Calendar, Clock } from 'lucide-react';
 import './PropertyDetail.css';
 
 const formatPrice = (price) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
     .format(price);
 
-// Formulario vacío de cita
 const EMPTY_FORM = {
   name:    '',
   email:   '',
@@ -27,7 +20,7 @@ const EMPTY_FORM = {
 };
 
 function PropertyDetail() {
-  const { id } = useParams(); // Obtiene el ID de la URL: /property/:id
+  const { id } = useParams();
 
   const [property,     setProperty]     = useState(null);
   const [loading,      setLoading]      = useState(true);
@@ -36,9 +29,8 @@ function PropertyDetail() {
   const [formData,     setFormData]     = useState(EMPTY_FORM);
   const [formErrors,   setFormErrors]   = useState({});
   const [submitting,   setSubmitting]   = useState(false);
-  const [submitted,    setSubmitted]    = useState(false); // cita enviada con éxito
+  const [submitted,    setSubmitted]    = useState(false);
 
-  // ── Cargar propiedad desde Firestore ──
   useEffect(() => {
     const fetch = async () => {
       try {
@@ -60,17 +52,14 @@ function PropertyDetail() {
     fetch();
   }, [id]);
 
-  // ── Manejo del formulario ──
   const handleInput = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-    // Borrar error del campo cuando el usuario escribe
     if (formErrors[name]) {
       setFormErrors(prev => ({ ...prev, [name]: '' }));
     }
   };
 
-  // Validar formulario antes de enviar
   const validate = () => {
     const errs = {};
     if (!formData.name.trim())  errs.name  = 'El nombre es requerido.';
@@ -80,7 +69,6 @@ function PropertyDetail() {
     if (!formData.date)         errs.date  = 'Selecciona una fecha.';
     if (!formData.time)         errs.time  = 'Selecciona una hora.';
 
-    // La fecha debe ser hoy o futura
     if (formData.date) {
       const today = new Date().toISOString().split('T')[0];
       if (formData.date < today) errs.date = 'La fecha no puede ser en el pasado.';
@@ -90,7 +78,6 @@ function PropertyDetail() {
     return Object.keys(errs).length === 0;
   };
 
-  // Enviar la solicitud de cita a Firestore
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
@@ -104,9 +91,9 @@ function PropertyDetail() {
         phone:         formData.phone.trim(),
         propertyId:    id,
         propertyTitle: property.title,
-        propertyImage: property.imageUrl || '',
+        propertyImage: property.imageUrl || (Array.isArray(property.images) ? property.images[0] : ''),
         status:        'pendiente',
-        createdAt:     serverTimestamp(), // timestamp del servidor
+        createdAt:     serverTimestamp(),
       });
 
       setSubmitted(true);
@@ -119,7 +106,6 @@ function PropertyDetail() {
     }
   };
 
-  // ── Renderizado de estados especiales ──
   if (loading) {
     return (
       <div className="detail-page detail-page--loading">
@@ -135,26 +121,31 @@ function PropertyDetail() {
     return (
       <div className="detail-page detail-page--error">
         <div className="detail-error">
-          <span>🏚️</span>
+          <Home size={64} strokeWidth={1.5} />
           <h2>Oops</h2>
           <p>{error || 'Propiedad no encontrada.'}</p>
-          <Link to="/" className="btn btn-gold">← Volver al catálogo</Link>
+          <Link to="/" className="btn btn-gold">
+            <ChevronLeft size={16} />
+            Volver al catálogo
+          </Link>
         </div>
       </div>
     );
   }
 
-  // Fecha mínima para el selector (hoy)
   const today = new Date().toISOString().split('T')[0];
+  const firstImage = Array.isArray(property.images) ? property.images[0] : (property.imageUrl || '');
 
-  // ── Renderizado principal ──
   return (
     <div className="detail-page">
 
-      {/* ── Breadcrumb ── */}
+      {/* Breadcrumb */}
       <div className="detail-breadcrumb">
         <div className="container">
-          <Link to="/" className="breadcrumb-link">← Catálogo</Link>
+          <Link to="/" className="breadcrumb-link">
+            <ChevronLeft size={14} />
+            Catálogo
+          </Link>
           <span className="breadcrumb-sep">/</span>
           <span className="breadcrumb-current">{property.title}</span>
         </div>
@@ -162,59 +153,59 @@ function PropertyDetail() {
 
       <div className="detail-container container">
 
-        {/* ─── COLUMNA IZQUIERDA: Info de la propiedad ─── */}
+        {/* Columna izquierda */}
         <div className="detail-left">
 
-          {/* Imagen principal */}
+          {/* Imagen */}
           <div className="detail-image-wrap">
-            {property.imageUrl ? (
-              <img src={property.imageUrl} alt={property.title} className="detail-image" />
+            {firstImage ? (
+              <img src={firstImage} alt={property.title} className="detail-image" loading="lazy" />
             ) : (
               <div className="detail-image-placeholder">
-                <span>🏠</span>
+                <Home size={64} strokeWidth={1.5} />
                 <p>Sin imagen disponible</p>
               </div>
             )}
-
-            {/* Badge de tipo */}
             <div className="detail-type-badge">{property.type}</div>
           </div>
 
-          {/* Info principal */}
+          {/* Info */}
           <div className="detail-info">
             <p className="detail-price">{formatPrice(property.price)}</p>
             <h1 className="detail-title">{property.title}</h1>
-            <p className="detail-location">📍 {property.location}</p>
+            <p className="detail-location">
+              <MapPin size={16} />
+              {property.location}
+            </p>
 
-            {/* Separador dorado */}
             <div className="gold-divider" />
 
-            {/* Grid de características */}
+            {/* Features */}
             <div className="detail-features">
               {property.bedrooms > 0 && (
                 <div className="feature-box">
-                  <span className="feature-box__icon">🛏</span>
+                  <Bed size={24} />
                   <span className="feature-box__val">{property.bedrooms}</span>
                   <span className="feature-box__lbl">Habitaciones</span>
                 </div>
               )}
               {property.bathrooms > 0 && (
                 <div className="feature-box">
-                  <span className="feature-box__icon">🚿</span>
+                  <Bath size={24} />
                   <span className="feature-box__val">{property.bathrooms}</span>
                   <span className="feature-box__lbl">Baños</span>
                 </div>
               )}
               {property.area > 0 && (
                 <div className="feature-box">
-                  <span className="feature-box__icon">📐</span>
+                  <Maximize size={24} />
                   <span className="feature-box__val">{property.area}</span>
                   <span className="feature-box__lbl">m²</span>
                 </div>
               )}
               {property.garage > 0 && (
                 <div className="feature-box">
-                  <span className="feature-box__icon">🚗</span>
+                  <Car size={24} />
                   <span className="feature-box__val">{property.garage}</span>
                   <span className="feature-box__lbl">Garaje</span>
                 </div>
@@ -229,7 +220,7 @@ function PropertyDetail() {
               </div>
             )}
 
-            {/* Amenidades (si existen) */}
+            {/* Amenidades */}
             {property.amenities && property.amenities.length > 0 && (
               <div className="detail-amenities">
                 <h3>Amenidades</h3>
@@ -243,7 +234,7 @@ function PropertyDetail() {
           </div>
         </div>
 
-        {/* ─── COLUMNA DERECHA: Formulario de cita ─── */}
+        {/* Columna derecha: Formulario */}
         <div className="detail-right">
           <div className="booking-card">
             <h2 className="booking-card__title">Solicitar visita</h2>
@@ -251,10 +242,11 @@ function PropertyDetail() {
               Completa el formulario y un asesor te contactará.
             </p>
 
-            {/* Éxito: cita enviada */}
             {submitted ? (
               <div className="booking-success">
-                <div className="booking-success__icon">✅</div>
+                <div className="booking-success__icon">
+                  <Calendar size={48} strokeWidth={1.5} />
+                </div>
                 <h3>¡Solicitud enviada!</h3>
                 <p>
                   Recibimos tu solicitud de visita para <strong>{property.title}</strong>.
@@ -270,16 +262,15 @@ function PropertyDetail() {
               </div>
             ) : (
               <>
-                {/* Botón para mostrar/ocultar formulario */}
                 <button
                   className="btn btn-gold btn-block"
                   style={{ marginBottom: showForm ? '1.5rem' : 0 }}
                   onClick={() => setShowForm(!showForm)}
                 >
-                  {showForm ? '↑ Ocultar formulario' : '📅 Agendar visita'}
+                  <Calendar size={16} />
+                  {showForm ? 'Ocultar formulario' : 'Agendar visita'}
                 </button>
 
-                {/* Formulario */}
                 {showForm && (
                   <form className="booking-form" onSubmit={handleSubmit} noValidate>
                     <div className="form-group">
@@ -379,23 +370,35 @@ function PropertyDetail() {
                       className="btn btn-gold btn-block"
                       disabled={submitting}
                     >
-                      {submitting ? '⏳ Enviando...' : '✓ Confirmar solicitud'}
+                      {submitting ? (
+                        <>
+                          <Clock className="spinner-icon" size={16} />
+                          Enviando...
+                        </>
+                      ) : (
+                        <>Confirmar solicitud</>
+                      )}
                     </button>
 
                     <p className="booking-note">
-                      🔒 Tu información es confidencial y solo será usada para coordinar la visita.
+                      <Lock size={12} />
+                      Tu información es confidencial y solo será usada para coordinar la visita.
                     </p>
                   </form>
                 )}
               </>
             )}
 
-            {/* Info de contacto directo */}
+            {/* Contacto directo */}
             <div className="booking-contact">
               <p>¿Prefieres llamar?</p>
-              <a href="tel:+50688888888" className="contact-phone">📞 +506 8888-8888</a>
+              <a href="tel:+50688888888" className="contact-phone">
+                <Phone size={14} />
+                +506 8888-8888
+              </a>
               <a href="mailto:info@inmobiliariapro.com" className="contact-email">
-                ✉️ info@inmobiliariapro.com
+                <Mail size={14} />
+                info@inmobiliariapro.com
               </a>
             </div>
           </div>

@@ -15,12 +15,12 @@
 //  • Authentication → Comenzar → Correo/Contraseña (Habilitar)
 // ─────────────────────────────────────────────────────────────────────
 
+
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { getStorage } from 'firebase/storage';
 
-// 🔑 REEMPLAZA CON TUS CREDENCIALES REALES DE FIREBASE
 const firebaseConfig = {
   apiKey:            "AIzaSyDhdBZqwdwOKQw_L8bQX9QxnNMb_exqvco",
   authDomain:        "proyecto-requerimientos-c60f0.firebaseapp.com",
@@ -29,13 +29,10 @@ const firebaseConfig = {
   messagingSenderId: "388021542929",
   appId:             "1:388021542929:web:29ef8e66f12bbf525811b0",
 };
-
-// ─── Inicializar Firebase ───
 const app = initializeApp(firebaseConfig);
 
-// ─── Exportar servicios que usaremos en la app ───
-export const db      = getFirestore(app);   // Base de datos
-export const auth    = getAuth(app);        // Autenticación
-export const storage = getStorage(app);     // Almacenamiento de imágenes
+export const db      = getFirestore(app);
+export const auth    = getAuth(app);
+export const storage = getStorage(app);
 
 export default app;

@@ -1,25 +1,18 @@
 // src/pages/PropertyManagement.jsx
-// ─────────────────────────────────────────────────────────────────────
-//  Gestión CRUD de propiedades para el admin.
-//  • Crear, editar y eliminar propiedades
-//  • Formulario con validación
-//  • Tabla con todas las propiedades
-// ─────────────────────────────────────────────────────────────────────
-
+// AHORA CON GALERÍA DE IMÁGENES (múltiples URLs)
 import React, { useState, useEffect } from 'react';
 import {
   collection, getDocs, addDoc, updateDoc, deleteDoc,
   doc, serverTimestamp
 } from 'firebase/firestore';
 import { db } from '../firebase';
+import { Plus, Edit2, Trash2, Home, Image as ImageIcon, X } from 'lucide-react';
 import './PropertyManagement.css';
 
-// Formateador de precios
 const formatPrice = (price) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
     .format(price);
 
-// Formulario vacío
 const EMPTY_FORM = {
   title:       '',
   location:    '',
@@ -30,24 +23,20 @@ const EMPTY_FORM = {
   area:        '',
   garage:      '0',
   description: '',
-  imageUrl:    '',
-  amenities:   '', // cadena separada por comas
+  images:      [''], // ← Ahora es array de URLs
+  amenities:   '',
 };
-
-// Campos numéricos que se convierten al guardar
-const NUM_FIELDS = ['price', 'bedrooms', 'bathrooms', 'area', 'garage'];
 
 function PropertyManagement() {
   const [properties,  setProperties]  = useState([]);
   const [loading,     setLoading]     = useState(true);
   const [showForm,    setShowForm]    = useState(false);
-  const [editingId,   setEditingId]   = useState(null); // null = creando
+  const [editingId,   setEditingId]   = useState(null);
   const [formData,    setFormData]    = useState(EMPTY_FORM);
   const [formErrors,  setFormErrors]  = useState({});
   const [saving,      setSaving]      = useState(false);
-  const [deleteId,    setDeleteId]    = useState(null); // para modal de confirmación
+  const [deleteId,    setDeleteId]    = useState(null);
 
-  // ── Cargar propiedades ──
   useEffect(() => { loadProperties(); }, []);
 
   const loadProperties = async () => {
@@ -63,14 +52,29 @@ function PropertyManagement() {
     }
   };
 
-  // ── Manejo del formulario ──
   const handleInput = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
     if (formErrors[name]) setFormErrors(prev => ({ ...prev, [name]: '' }));
   };
 
-  // Validar antes de guardar
+  // Manejo de imágenes (array)
+  const handleImageChange = (index, value) => {
+    const newImages = [...formData.images];
+    newImages[index] = value;
+    setFormData(prev => ({ ...prev, images: newImages }));
+  };
+
+  const addImageField = () => {
+    setFormData(prev => ({ ...prev, images: [...prev.images, ''] }));
+  };
+
+  const removeImageField = (index) => {
+    if (formData.images.length === 1) return; // Siempre dejar al menos 1
+    const newImages = formData.images.filter((_, i) => i !== index);
+    setFormData(prev => ({ ...prev, images: newImages }));
+  };
+
   const validate = () => {
     const errs = {};
     if (!formData.title.trim())       errs.title    = 'El título es requerido.';
@@ -88,18 +92,24 @@ function PropertyManagement() {
     return Object.keys(errs).length === 0;
   };
 
-  // Abrir formulario para crear
   const openCreate = () => {
     setFormData(EMPTY_FORM);
     setFormErrors({});
     setEditingId(null);
     setShowForm(true);
-    // Hacer scroll hacia arriba
     window.scrollTo({ top: 120, behavior: 'smooth' });
   };
 
-  // Abrir formulario para editar
   const openEdit = (property) => {
+    // Convertir imageUrl antigua a array si existe
+    let images = [''];
+    if (property.images && Array.isArray(property.images)) {
+      images = property.images.filter(Boolean);
+      if (images.length === 0) images = [''];
+    } else if (property.imageUrl) {
+      images = [property.imageUrl];
+    }
+
     setFormData({
       title:       property.title       || '',
       location:    property.location    || '',
@@ -110,7 +120,7 @@ function PropertyManagement() {
       area:        property.area?.toString() || '',
       garage:      property.garage?.toString() || '0',
       description: property.description || '',
-      imageUrl:    property.imageUrl    || '',
+      images:      images,
       amenities:   Array.isArray(property.amenities)
                      ? property.amenities.join(', ')
                      : (property.amenities || ''),
@@ -121,21 +131,21 @@ function PropertyManagement() {
     window.scrollTo({ top: 120, behavior: 'smooth' });
   };
 
-  // Cancelar formulario
   const cancelForm = () => {
     setShowForm(false);
     setEditingId(null);
     setFormErrors({});
   };
 
-  // Guardar (crear o actualizar)
   const handleSave = async (e) => {
     e.preventDefault();
     if (!validate()) return;
 
     setSaving(true);
     try {
-      // Preparar datos convirtiendo campos numéricos
+      // Filtrar imágenes vacías
+      const validImages = formData.images.filter(img => img.trim());
+
       const dataToSave = {
         title:       formData.title.trim(),
         location:    formData.location.trim(),
@@ -146,21 +156,19 @@ function PropertyManagement() {
         area:        Number(formData.area),
         garage:      Number(formData.garage) || 0,
         description: formData.description.trim(),
-        imageUrl:    formData.imageUrl.trim(),
-        // Convertir amenidades de string a array
+        images:      validImages, // ← Array de URLs
+        imageUrl:    validImages[0] || '', // Compatibilidad hacia atrás
         amenities:   formData.amenities
                        ? formData.amenities.split(',').map(a => a.trim()).filter(Boolean)
                        : [],
       };
 
       if (editingId) {
-        // Actualizar documento existente
         await updateDoc(doc(db, 'properties', editingId), {
           ...dataToSave,
           updatedAt: serverTimestamp(),
         });
       } else {
-        // Crear nuevo documento
         await addDoc(collection(db, 'properties'), {
           ...dataToSave,
           createdAt: serverTimestamp(),
@@ -168,7 +176,7 @@ function PropertyManagement() {
       }
 
       cancelForm();
-      await loadProperties(); // recargar la lista
+      await loadProperties();
     } catch (err) {
       console.error('Error guardando propiedad:', err);
       alert('Error al guardar. Por favor intenta de nuevo.');
@@ -177,7 +185,6 @@ function PropertyManagement() {
     }
   };
 
-  // Eliminar propiedad
   const handleDelete = async () => {
     if (!deleteId) return;
     try {
@@ -190,12 +197,11 @@ function PropertyManagement() {
     }
   };
 
-  // ── Renderizado ──
   return (
     <div className="admin-page">
       <div className="admin-container">
 
-        {/* ── Header ── */}
+        {/* Header */}
         <div className="pm-header">
           <div>
             <h1 className="dash-title">Gestión de Propiedades</h1>
@@ -204,21 +210,21 @@ function PropertyManagement() {
             </p>
           </div>
           <button className="btn btn-gold" onClick={showForm ? cancelForm : openCreate}>
-            {showForm ? '✕ Cancelar' : '+ Nueva propiedad'}
+            {showForm ? <X size={16} /> : <Plus size={16} />}
+            {showForm ? 'Cancelar' : 'Nueva propiedad'}
           </button>
         </div>
 
-        {/* ── Formulario (crear / editar) ── */}
+        {/* Formulario */}
         {showForm && (
           <div className="pm-form-card">
             <h2 className="pm-form-title">
-              {editingId ? '✏️ Editar propiedad' : '🏠 Nueva propiedad'}
+              {editingId ? <><Edit2 size={20} /> Editar propiedad</> : <><Home size={20} /> Nueva propiedad</>}
             </h2>
 
             <form onSubmit={handleSave} noValidate>
               <div className="pm-form-grid">
 
-                {/* Título */}
                 <div className="form-group pm-col-2">
                   <label>Título *</label>
                   <input type="text" name="title" value={formData.title} onChange={handleInput}
@@ -228,7 +234,6 @@ function PropertyManagement() {
                   {formErrors.title && <span className="field-error">{formErrors.title}</span>}
                 </div>
 
-                {/* Ubicación */}
                 <div className="form-group pm-col-2">
                   <label>Ubicación *</label>
                   <input type="text" name="location" value={formData.location} onChange={handleInput}
@@ -238,7 +243,6 @@ function PropertyManagement() {
                   {formErrors.location && <span className="field-error">{formErrors.location}</span>}
                 </div>
 
-                {/* Precio */}
                 <div className="form-group">
                   <label>Precio (USD) *</label>
                   <input type="number" name="price" value={formData.price} onChange={handleInput}
@@ -248,7 +252,6 @@ function PropertyManagement() {
                   {formErrors.price && <span className="field-error">{formErrors.price}</span>}
                 </div>
 
-                {/* Tipo */}
                 <div className="form-group">
                   <label>Tipo *</label>
                   <select name="type" value={formData.type} onChange={handleInput} className="form-control">
@@ -259,29 +262,24 @@ function PropertyManagement() {
                   </select>
                 </div>
 
-                {/* Habitaciones */}
                 <div className="form-group">
                   <label>Habitaciones {formData.type !== 'Terreno' && '*'}</label>
                   <input type="number" name="bedrooms" value={formData.bedrooms} onChange={handleInput}
                     className={`form-control ${formErrors.bedrooms ? 'form-control--error' : ''}`}
-                    placeholder="3" min="0"
-                    disabled={formData.type === 'Terreno'}
+                    placeholder="3" min="0" disabled={formData.type === 'Terreno'}
                   />
                   {formErrors.bedrooms && <span className="field-error">{formErrors.bedrooms}</span>}
                 </div>
 
-                {/* Baños */}
                 <div className="form-group">
                   <label>Baños {formData.type !== 'Terreno' && '*'}</label>
                   <input type="number" name="bathrooms" value={formData.bathrooms} onChange={handleInput}
                     className={`form-control ${formErrors.bathrooms ? 'form-control--error' : ''}`}
-                    placeholder="2" min="0"
-                    disabled={formData.type === 'Terreno'}
+                    placeholder="2" min="0" disabled={formData.type === 'Terreno'}
                   />
                   {formErrors.bathrooms && <span className="field-error">{formErrors.bathrooms}</span>}
                 </div>
 
-                {/* Área */}
                 <div className="form-group">
                   <label>Área (m²) *</label>
                   <input type="number" name="area" value={formData.area} onChange={handleInput}
@@ -291,7 +289,6 @@ function PropertyManagement() {
                   {formErrors.area && <span className="field-error">{formErrors.area}</span>}
                 </div>
 
-                {/* Garage */}
                 <div className="form-group">
                   <label>Garage (espacios)</label>
                   <input type="number" name="garage" value={formData.garage} onChange={handleInput}
@@ -299,28 +296,61 @@ function PropertyManagement() {
                   />
                 </div>
 
-                {/* URL de imagen */}
+                {/* GALERÍA DE IMÁGENES */}
                 <div className="form-group pm-col-2">
-                  <label>URL de imagen</label>
-                  <input type="url" name="imageUrl" value={formData.imageUrl} onChange={handleInput}
-                    className="form-control"
-                    placeholder="https://images.unsplash.com/..."
-                  />
+                  <label>
+                    <ImageIcon size={14} style={{ display: 'inline', marginRight: '4px' }} />
+                    Galería de imágenes (URLs)
+                  </label>
+                  {formData.images.map((img, index) => (
+                    <div key={index} className="image-input-row">
+                      <input
+                        type="url"
+                        value={img}
+                        onChange={(e) => handleImageChange(index, e.target.value)}
+                        className="form-control"
+                        placeholder={`https://images.unsplash.com/... (Imagen ${index + 1})`}
+                      />
+                      {formData.images.length > 1 && (
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-danger"
+                          onClick={() => removeImageField(index)}
+                          style={{ flexShrink: 0 }}
+                        >
+                          <X size={14} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline"
+                    onClick={addImageField}
+                    style={{ marginTop: '.5rem' }}
+                  >
+                    <Plus size={14} />
+                    Agregar otra imagen
+                  </button>
                   <small className="field-hint">
                     Puedes usar imágenes de Unsplash: https://unsplash.com
                   </small>
-                  {/* Preview de imagen */}
-                  {formData.imageUrl && (
-                    <img
-                      src={formData.imageUrl}
-                      alt="Preview"
-                      className="image-preview"
-                      onError={(e) => { e.target.style.display = 'none'; }}
-                    />
+                  {/* Preview de imágenes */}
+                  {formData.images.some(img => img.trim()) && (
+                    <div className="images-preview">
+                      {formData.images.filter(img => img.trim()).map((img, i) => (
+                        <img
+                          key={i}
+                          src={img}
+                          alt={`Preview ${i + 1}`}
+                          className="image-preview-small"
+                          onError={(e) => { e.target.style.display = 'none'; }}
+                        />
+                      ))}
+                    </div>
                   )}
                 </div>
 
-                {/* Amenidades */}
                 <div className="form-group pm-col-2">
                   <label>Amenidades (separadas por comas)</label>
                   <input type="text" name="amenities" value={formData.amenities} onChange={handleInput}
@@ -329,7 +359,6 @@ function PropertyManagement() {
                   />
                 </div>
 
-                {/* Descripción */}
                 <div className="form-group pm-col-2">
                   <label>Descripción *</label>
                   <textarea name="description" value={formData.description} onChange={handleInput}
@@ -341,7 +370,6 @@ function PropertyManagement() {
                 </div>
               </div>
 
-              {/* Acciones del formulario */}
               <div className="pm-form-actions">
                 <button type="button" className="btn btn-outline" onClick={cancelForm}>
                   Cancelar
@@ -354,7 +382,7 @@ function PropertyManagement() {
           </div>
         )}
 
-        {/* ── Tabla de propiedades ── */}
+        {/* Tabla */}
         {loading ? (
           <div className="loading-inline">
             <div className="spinner-sm" />
@@ -362,7 +390,9 @@ function PropertyManagement() {
           </div>
         ) : properties.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-icon">🏚️</div>
+            <div className="empty-icon">
+              <Home size={48} strokeWidth={1.5} />
+            </div>
             <h3>Sin propiedades</h3>
             <p>Agrega tu primera propiedad con el botón de arriba.</p>
           </div>
@@ -380,73 +410,74 @@ function PropertyManagement() {
                 </tr>
               </thead>
               <tbody>
-                {properties.map(p => (
-                  <tr key={p.id}>
-                    {/* Miniatura */}
-                    <td>
-                      <div className="table-thumbnail">
-                        {p.imageUrl ? (
-                          <img src={p.imageUrl} alt={p.title}
-                            onError={(e) => { e.target.src = ''; e.target.style.display = 'none'; }}
-                          />
-                        ) : (
-                          <span className="thumb-placeholder">🏠</span>
-                        )}
-                      </div>
-                    </td>
+                {properties.map(p => {
+                  const firstImage = Array.isArray(p.images) ? p.images[0] : (p.imageUrl || '');
+                  return (
+                    <tr key={p.id}>
+                      <td>
+                        <div className="table-thumbnail">
+                          {firstImage ? (
+                            <img src={firstImage} alt={p.title}
+                              onError={(e) => { e.target.src = ''; e.target.style.display = 'none'; }}
+                            />
+                          ) : (
+                            <span className="thumb-placeholder">
+                              <Home size={20} />
+                            </span>
+                          )}
+                        </div>
+                      </td>
 
-                    {/* Título y ubicación */}
-                    <td>
-                      <div className="table-title-cell">
-                        <strong>{p.title}</strong>
-                        <small>📍 {p.location}</small>
-                      </div>
-                    </td>
+                      <td>
+                        <div className="table-title-cell">
+                          <strong>{p.title}</strong>
+                          <small>📍 {p.location}</small>
+                        </div>
+                      </td>
 
-                    {/* Tipo */}
-                    <td>
-                      <span className="type-chip">{p.type}</span>
-                    </td>
+                      <td>
+                        <span className="type-chip">{p.type}</span>
+                      </td>
 
-                    {/* Precio */}
-                    <td className="price-cell">{formatPrice(p.price)}</td>
+                      <td className="price-cell">{formatPrice(p.price)}</td>
 
-                    {/* Características */}
-                    <td>
-                      <div className="char-list">
-                        {p.bedrooms > 0 && <span>🛏 {p.bedrooms}</span>}
-                        {p.bathrooms > 0 && <span>🚿 {p.bathrooms}</span>}
-                        <span>📐 {p.area} m²</span>
-                      </div>
-                    </td>
+                      <td>
+                        <div className="char-list">
+                          {p.bedrooms > 0 && <span>🛏 {p.bedrooms}</span>}
+                          {p.bathrooms > 0 && <span>🚿 {p.bathrooms}</span>}
+                          <span>📐 {p.area} m²</span>
+                        </div>
+                      </td>
 
-                    {/* Acciones */}
-                    <td>
-                      <div className="table-actions">
-                        <button
-                          className="btn btn-sm btn-dark"
-                          onClick={() => openEdit(p)}
-                          title="Editar"
-                        >
-                          ✏️ Editar
-                        </button>
-                        <button
-                          className="btn btn-sm btn-danger"
-                          onClick={() => setDeleteId(p.id)}
-                          title="Eliminar"
-                        >
-                          🗑️ Eliminar
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      <td>
+                        <div className="table-actions">
+                          <button
+                            className="btn btn-sm btn-dark"
+                            onClick={() => openEdit(p)}
+                            title="Editar"
+                          >
+                            <Edit2 size={14} />
+                            Editar
+                          </button>
+                          <button
+                            className="btn btn-sm btn-danger"
+                            onClick={() => setDeleteId(p.id)}
+                            title="Eliminar"
+                          >
+                            <Trash2 size={14} />
+                            Eliminar
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         )}
 
-        {/* ── Modal de confirmación para eliminar ── */}
+        {/* Modal */}
         {deleteId && (
           <div className="modal-overlay" onClick={() => setDeleteId(null)}>
             <div className="modal" onClick={(e) => e.stopPropagation()}>

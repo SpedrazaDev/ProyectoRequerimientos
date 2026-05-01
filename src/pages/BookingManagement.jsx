@@ -1,12 +1,4 @@
 // src/pages/BookingManagement.jsx
-// ─────────────────────────────────────────────────────────────────────
-//  Gestión de citas solicitadas por los clientes.
-//  • Ver todas las citas con información del cliente
-//  • Filtrar por estado (pendiente / confirmada / cancelada)
-//  • Cambiar estado de cada cita
-//  • Eliminar citas
-// ─────────────────────────────────────────────────────────────────────
-
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   collection, getDocs, updateDoc, deleteDoc,
@@ -14,9 +6,12 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useLocation } from 'react-router-dom';
+import { 
+  RefreshCw, Mail, Clock, CheckCircle, X, 
+  Phone, MessageSquare, Trash2, ClipboardList 
+} from 'lucide-react';
 import './BookingManagement.css';
 
-// Formato de fecha legible
 const formatDate = (ts) => {
   if (!ts) return '—';
   const d = ts?.toDate ? ts.toDate() : new Date(ts);
@@ -27,9 +22,9 @@ const formatDate = (ts) => {
 };
 
 const STATUS_LABELS = {
-  pendiente:  { icon: '⏳', label: 'Pendiente',  class: 'pending'   },
-  confirmada: { icon: '✅', label: 'Confirmada', class: 'confirmed' },
-  cancelada:  { icon: '❌', label: 'Cancelada',  class: 'cancelled' },
+  pendiente:  { icon: Clock,       label: 'Pendiente',  class: 'pending'   },
+  confirmada: { icon: CheckCircle, label: 'Confirmada', class: 'confirmed' },
+  cancelada:  { icon: X,           label: 'Cancelada',  class: 'cancelled' },
 };
 
 function BookingManagement() {
@@ -37,12 +32,11 @@ function BookingManagement() {
   const [loading,     setLoading]     = useState(true);
   const [activeTab,   setActiveTab]   = useState('todos');
   const [deleteId,    setDeleteId]    = useState(null);
-  const [updating,    setUpdating]    = useState(null); // id de la cita que se está actualizando
-  const [expanded,    setExpanded]    = useState(null); // id de cita expandida
+  const [updating,    setUpdating]    = useState(null);
+  const [expanded,    setExpanded]    = useState(null);
 
   const location = useLocation();
 
-  // Leer filtro inicial de la URL (ej: /admin/bookings?status=pendiente)
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const status = params.get('status');
@@ -51,7 +45,6 @@ function BookingManagement() {
     }
   }, [location.search]);
 
-  // ── Cargar citas ──
   useEffect(() => { loadBookings(); }, []);
 
   const loadBookings = async () => {
@@ -75,13 +68,11 @@ function BookingManagement() {
     }
   };
 
-  // ── Filtrar por pestaña ──
   const filtered = useMemo(() => {
     if (activeTab === 'todos') return bookings;
     return bookings.filter(b => b.status === activeTab);
   }, [bookings, activeTab]);
 
-  // Contar por estado
   const counts = useMemo(() => ({
     todos:     bookings.length,
     pendiente: bookings.filter(b => b.status === 'pendiente').length,
@@ -89,7 +80,6 @@ function BookingManagement() {
     cancelada: bookings.filter(b => b.status === 'cancelada').length,
   }), [bookings]);
 
-  // ── Cambiar estado de cita ──
   const changeStatus = async (id, newStatus) => {
     setUpdating(id);
     try {
@@ -105,7 +95,6 @@ function BookingManagement() {
     }
   };
 
-  // ── Eliminar cita ──
   const handleDelete = async () => {
     if (!deleteId) return;
     try {
@@ -118,12 +107,11 @@ function BookingManagement() {
     }
   };
 
-  // ── Renderizado ──
   return (
     <div className="admin-page">
       <div className="admin-container">
 
-        {/* ── Header ── */}
+        {/* Header */}
         <div className="bm-header">
           <div>
             <h1 className="dash-title">Gestión de Citas</h1>
@@ -132,29 +120,32 @@ function BookingManagement() {
             </p>
           </div>
           <button className="btn btn-dark" onClick={loadBookings}>
-            ↺ Actualizar
+            <RefreshCw size={16} />
+            Actualizar
           </button>
         </div>
 
-        {/* ── Tabs de filtro ── */}
+        {/* Tabs */}
         <div className="bm-tabs">
-          {['todos', 'pendiente', 'confirmada', 'cancelada'].map(tab => (
-            <button
-              key={tab}
-              className={`bm-tab ${activeTab === tab ? 'bm-tab--active' : ''}`}
-              onClick={() => setActiveTab(tab)}
-            >
-              {tab === 'todos'     && '📋 '}
-              {tab === 'pendiente' && '⏳ '}
-              {tab === 'confirmada' && '✅ '}
-              {tab === 'cancelada' && '❌ '}
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
-              <span className="bm-tab-count">{counts[tab]}</span>
-            </button>
-          ))}
+          {['todos', 'pendiente', 'confirmada', 'cancelada'].map(tab => {
+            const Icon = tab === 'todos' ? ClipboardList : 
+                        tab === 'pendiente' ? Clock :
+                        tab === 'confirmada' ? CheckCircle : X;
+            return (
+              <button
+                key={tab}
+                className={`bm-tab ${activeTab === tab ? 'bm-tab--active' : ''}`}
+                onClick={() => setActiveTab(tab)}
+              >
+                <Icon size={16} />
+                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                <span className="bm-tab-count">{counts[tab]}</span>
+              </button>
+            );
+          })}
         </div>
 
-        {/* ── Lista de citas ── */}
+        {/* Lista */}
         {loading ? (
           <div className="loading-inline">
             <div className="spinner-sm" />
@@ -162,7 +153,9 @@ function BookingManagement() {
           </div>
         ) : filtered.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-icon">📭</div>
+            <div className="empty-icon">
+              <Mail size={48} strokeWidth={1.5} />
+            </div>
             <h3>Sin citas aquí</h3>
             <p>
               {activeTab === 'todos'
@@ -173,6 +166,7 @@ function BookingManagement() {
         ) : (
           <div className="bm-list">
             {filtered.map(booking => {
+              const StatusIcon  = STATUS_LABELS[booking.status]?.icon || Clock;
               const statusInfo  = STATUS_LABELS[booking.status] || STATUS_LABELS.pendiente;
               const isExpanded  = expanded === booking.id;
               const isUpdating  = updating === booking.id;
@@ -182,7 +176,7 @@ function BookingManagement() {
                   key={booking.id}
                   className={`bm-card bm-card--${statusInfo.class}`}
                 >
-                  {/* ── Cabecera de la tarjeta ── */}
+                  {/* Cabecera */}
                   <div className="bm-card__head">
                     <div className="bm-card__client">
                       <div className="client-avatar">
@@ -196,13 +190,14 @@ function BookingManagement() {
 
                     <div className="bm-card__meta">
                       <span className={`badge badge-${statusInfo.class}`}>
-                        {statusInfo.icon} {statusInfo.label}
+                        <StatusIcon size={12} />
+                        {statusInfo.label}
                       </span>
                       <small className="bm-date">{formatDate(booking.createdAt)}</small>
                     </div>
                   </div>
 
-                  {/* ── Info principal ── */}
+                  {/* Info principal */}
                   <div className="bm-card__info">
                     <div className="bm-info-item">
                       <span className="bm-info-label">Propiedad</span>
@@ -222,7 +217,7 @@ function BookingManagement() {
                     </div>
                   </div>
 
-                  {/* ── Mensaje (expandible) ── */}
+                  {/* Mensaje */}
                   {booking.message && (
                     <div className="bm-message">
                       <button
@@ -237,17 +232,17 @@ function BookingManagement() {
                     </div>
                   )}
 
-                  {/* ── Acciones ── */}
+                  {/* Acciones */}
                   <div className="bm-card__actions">
                     <div className="bm-action-group">
-                      {/* Botones de cambio de estado */}
                       {booking.status !== 'confirmada' && (
                         <button
                           className="btn btn-sm btn-success"
                           onClick={() => changeStatus(booking.id, 'confirmada')}
                           disabled={isUpdating}
                         >
-                          {isUpdating ? '...' : '✅ Confirmar'}
+                          <CheckCircle size={14} />
+                          {isUpdating ? '...' : 'Confirmar'}
                         </button>
                       )}
                       {booking.status !== 'pendiente' && (
@@ -255,27 +250,29 @@ function BookingManagement() {
                           className="btn btn-sm btn-outline"
                           onClick={() => changeStatus(booking.id, 'pendiente')}
                           disabled={isUpdating}
-                          style={{ fontSize: '0.75rem', padding: '0.4rem 0.9rem' }}
+                          style={{ fontSize: '.75rem', padding: '.4rem .9rem' }}
                         >
-                          {isUpdating ? '...' : '⏳ Marcar pendiente'}
+                          <Clock size={14} />
+                          {isUpdating ? '...' : 'Marcar pendiente'}
                         </button>
                       )}
                       {booking.status !== 'cancelada' && (
                         <button
                           className="btn btn-sm"
-                          style={{ background: 'rgba(231,76,60,0.08)', color: 'var(--danger)', border: '1px solid rgba(231,76,60,0.25)', fontSize: '0.75rem', padding: '0.4rem 0.9rem' }}
+                          style={{ background: 'rgba(231,76,60,.08)', color: 'var(--danger)', border: '1px solid rgba(231,76,60,.25)' }}
                           onClick={() => changeStatus(booking.id, 'cancelada')}
                           disabled={isUpdating}
                         >
-                          {isUpdating ? '...' : '❌ Cancelar'}
+                          <X size={14} />
+                          {isUpdating ? '...' : 'Cancelar'}
                         </button>
                       )}
                     </div>
 
                     <div className="bm-action-group">
-                      {/* Contacto rápido */}
                       <a href={`mailto:${booking.email}`} className="btn btn-sm btn-dark" title="Enviar email">
-                        ✉️ Email
+                        <Mail size={14} />
+                        Email
                       </a>
                       <a href={`https://wa.me/${booking.phone?.replace(/\D/g, '')}`}
                         target="_blank" rel="noopener noreferrer"
@@ -283,15 +280,15 @@ function BookingManagement() {
                         style={{ background: '#25D366', color: 'white' }}
                         title="WhatsApp"
                       >
-                        💬 WhatsApp
+                        <MessageSquare size={14} />
+                        WhatsApp
                       </a>
-                      {/* Eliminar */}
                       <button
                         className="btn btn-sm btn-danger"
                         onClick={() => setDeleteId(booking.id)}
                         title="Eliminar cita"
                       >
-                        🗑️
+                        <Trash2 size={14} />
                       </button>
                     </div>
                   </div>
@@ -301,7 +298,7 @@ function BookingManagement() {
           </div>
         )}
 
-        {/* ── Modal de confirmación de eliminación ── */}
+        {/* Modal de confirmación */}
         {deleteId && (
           <div className="modal-overlay" onClick={() => setDeleteId(null)}>
             <div className="modal" onClick={(e) => e.stopPropagation()}>

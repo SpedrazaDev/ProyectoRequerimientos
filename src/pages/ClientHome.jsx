@@ -1,17 +1,16 @@
 // src/pages/ClientHome.jsx
 // ─────────────────────────────────────────────────────────────────────
-//  Página principal pública: catálogo de propiedades con filtros.
-//  Carga todas las propiedades de Firestore y permite filtrarlas
-//  por tipo, precio y número de habitaciones.
+//  Página principal pública: catálogo de propiedades con filtros - OPTIMIZADO
+//  ⚡ Solo carga las primeras 50 propiedades, no todas
 // ─────────────────────────────────────────────────────────────────────
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import { db } from '../firebase';
+import { Search } from 'lucide-react';
 import PropertyCard from '../components/PropertyCard';
 import './ClientHome.css';
 
-// Valores iniciales del filtro
 const EMPTY_FILTERS = {
   type:     '',
   minPrice: '',
@@ -21,16 +20,21 @@ const EMPTY_FILTERS = {
 };
 
 function ClientHome() {
-  const [properties, setProperties]   = useState([]);   // todas las propiedades
-  const [loading,    setLoading]       = useState(true); // cargando de Firebase
-  const [error,      setError]         = useState('');   // mensaje de error
+  const [properties, setProperties]   = useState([]);
+  const [loading,    setLoading]       = useState(true);
+  const [error,      setError]         = useState('');
   const [filters,    setFilters]       = useState(EMPTY_FILTERS);
 
-  // ── Cargar propiedades desde Firestore ──
+  // ── Cargar propiedades OPTIMIZADO (solo 50) ──
   useEffect(() => {
     const fetchProperties = async () => {
       try {
-        const q = query(collection(db, 'properties'), orderBy('createdAt', 'desc'));
+        // ⚡ Solo las primeras 50 propiedades más recientes ⚡
+        const q = query(
+          collection(db, 'properties'),
+          orderBy('createdAt', 'desc'),
+          limit(50)  // ← Límite para velocidad
+        );
         const snapshot = await getDocs(q);
         const data = snapshot.docs.map(doc => ({
           id: doc.id,
@@ -38,9 +42,10 @@ function ClientHome() {
         }));
         setProperties(data);
       } catch (err) {
-        // Si no hay índice de "createdAt", carga sin orden
+        // Si no hay índice de "createdAt", carga sin orden pero con límite
         try {
-          const snapshot = await getDocs(collection(db, 'properties'));
+          const q = query(collection(db, 'properties'), limit(50));
+          const snapshot = await getDocs(q);
           const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
           setProperties(data);
         } catch (err2) {
@@ -54,11 +59,10 @@ function ClientHome() {
     fetchProperties();
   }, []);
 
-  // ── Filtrar propiedades en memoria (sin ir a Firebase) ──
-  // useMemo: solo recalcula cuando cambian `properties` o `filters`
+  // ── Filtrar propiedades en memoria (rápido, sin ir a Firebase) ──
   const filtered = useMemo(() => {
     return properties.filter(p => {
-      // Filtro de texto libre (busca en título, ubicación y descripción)
+      // Filtro de texto libre
       if (filters.search) {
         const term = filters.search.toLowerCase();
         const matches =
@@ -84,16 +88,13 @@ function ClientHome() {
     });
   }, [properties, filters]);
 
-  // Manejar cambios en cualquier filtro
   const handleFilter = (e) => {
     const { name, value } = e.target;
     setFilters(prev => ({ ...prev, [name]: value }));
   };
 
-  // Resetear todos los filtros
   const clearFilters = () => setFilters(EMPTY_FILTERS);
 
-  // ── Renderizado ──
   return (
     <div className="client-home">
 
@@ -121,7 +122,8 @@ function ClientHome() {
               className="hero__search-input"
             />
             <button className="hero__search-btn">
-              🔍 Buscar
+              <Search size={18} />
+              Buscar
             </button>
           </div>
         </div>
@@ -135,10 +137,10 @@ function ClientHome() {
           {/* Tipo */}
           <select name="type" value={filters.type} onChange={handleFilter} className="filter-select">
             <option value="">Todos los tipos</option>
-            <option value="Casa">🏠 Casa</option>
-            <option value="Apartamento">🏢 Apartamento</option>
-            <option value="Terreno">🌿 Terreno</option>
-            <option value="Comercial">🏪 Comercial</option>
+            <option value="Casa">Casa</option>
+            <option value="Apartamento">Apartamento</option>
+            <option value="Terreno">Terreno</option>
+            <option value="Comercial">Comercial</option>
           </select>
 
           {/* Habitaciones */}
@@ -209,7 +211,9 @@ function ClientHome() {
         {/* Estado: sin resultados */}
         {!loading && !error && filtered.length === 0 && (
           <div className="empty-state">
-            <div className="empty-icon">🔍</div>
+            <div className="empty-icon">
+              <Search size={48} strokeWidth={1.5} />
+            </div>
             <h3>Sin resultados</h3>
             <p>
               {properties.length === 0

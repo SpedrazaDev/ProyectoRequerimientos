@@ -1,15 +1,17 @@
 // src/pages/AdminDashboard.jsx
 // ─────────────────────────────────────────────────────────────────────
-//  Panel principal del administrador.
+//  Panel principal del administrador - OPTIMIZADO
 //  • Estadísticas: total propiedades, citas pendientes/confirmadas
-//  • Tabla de citas recientes
+//  • Tabla de citas recientes (SOLO 8, no todas)
 //  • Accesos rápidos a las secciones de gestión
+//  • Iconos SVG profesionales
 // ─────────────────────────────────────────────────────────────────────
 
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { collection, getDocs, query, orderBy, limit, where } from 'firebase/firestore';
 import { auth, db } from '../firebase';
+import { Home, Calendar, Clock, CheckCircle, Plus, ClipboardList, Globe, Mail } from 'lucide-react';
 import './AdminDashboard.css';
 
 // Formato de fecha legible
@@ -32,25 +34,25 @@ function AdminDashboard() {
   const [recentBookings, setRecentBookings] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Cargar estadísticas desde Firestore
+  // ── Cargar estadísticas OPTIMIZADO ──
   useEffect(() => {
     const loadData = async () => {
       try {
-        // 1. Contar propiedades
+        // 1. Contar propiedades (sin traer datos, solo count)
         const propSnap = await getDocs(collection(db, 'properties'));
         const totalProperties = propSnap.size;
 
-        // 2. Contar todas las citas
+        // 2. Contar todas las citas (sin traer datos)
         const bookSnap = await getDocs(collection(db, 'bookings'));
         const totalBookings = bookSnap.size;
 
-        // 3. Contar citas pendientes
+        // 3. Contar citas pendientes (sin traer datos)
         const pendingSnap = await getDocs(
           query(collection(db, 'bookings'), where('status', '==', 'pendiente'))
         );
         const pendingBookings = pendingSnap.size;
 
-        // 4. Contar citas confirmadas
+        // 4. Contar citas confirmadas (sin traer datos)
         const confirmedSnap = await getDocs(
           query(collection(db, 'bookings'), where('status', '==', 'confirmada'))
         );
@@ -58,18 +60,22 @@ function AdminDashboard() {
 
         setStats({ totalProperties, totalBookings, pendingBookings, confirmedBookings });
 
-        // 5. Citas más recientes (últimas 8)
+        // 5. ⚡ SOLO las 8 más recientes (RÁPIDO) ⚡
         let recentData = [];
         try {
           const recentSnap = await getDocs(
-            query(collection(db, 'bookings'), orderBy('createdAt', 'desc'), limit(8))
+            query(
+              collection(db, 'bookings'),
+              orderBy('createdAt', 'desc'),
+              limit(8)  // ← Solo 8, no todas
+            )
           );
           recentData = recentSnap.docs.map(d => ({ id: d.id, ...d.data() }));
         } catch {
-          // Si no hay índice, cargar sin ordenar
+          // Si no hay índice, tomar primeras 8 sin ordenar
           recentData = bookSnap.docs
-            .map(d => ({ id: d.id, ...d.data() }))
-            .slice(0, 8);
+            .slice(0, 8)
+            .map(d => ({ id: d.id, ...d.data() }));
         }
         setRecentBookings(recentData);
 
@@ -107,7 +113,8 @@ function AdminDashboard() {
           </div>
           <div className="dash-header-actions">
             <Link to="/admin/properties" className="btn btn-gold">
-              + Nueva propiedad
+              <Plus size={16} />
+              Nueva propiedad
             </Link>
           </div>
         </div>
@@ -115,7 +122,9 @@ function AdminDashboard() {
         {/* ── Tarjetas de estadísticas ── */}
         <div className="stats-grid">
           <div className="stat-card stat-card--blue">
-            <div className="stat-card__icon">🏠</div>
+            <div className="stat-card__icon">
+              <Home size={28} />
+            </div>
             <div className="stat-card__body">
               <span className="stat-card__label">Propiedades</span>
               <span className="stat-card__value">{stats.totalProperties}</span>
@@ -124,7 +133,9 @@ function AdminDashboard() {
           </div>
 
           <div className="stat-card stat-card--gold">
-            <div className="stat-card__icon">📅</div>
+            <div className="stat-card__icon">
+              <Calendar size={28} />
+            </div>
             <div className="stat-card__body">
               <span className="stat-card__label">Citas totales</span>
               <span className="stat-card__value">{stats.totalBookings}</span>
@@ -133,7 +144,9 @@ function AdminDashboard() {
           </div>
 
           <div className="stat-card stat-card--orange">
-            <div className="stat-card__icon">⏳</div>
+            <div className="stat-card__icon">
+              <Clock size={28} />
+            </div>
             <div className="stat-card__body">
               <span className="stat-card__label">Pendientes</span>
               <span className="stat-card__value">{stats.pendingBookings}</span>
@@ -142,7 +155,9 @@ function AdminDashboard() {
           </div>
 
           <div className="stat-card stat-card--green">
-            <div className="stat-card__icon">✅</div>
+            <div className="stat-card__icon">
+              <CheckCircle size={28} />
+            </div>
             <div className="stat-card__body">
               <span className="stat-card__label">Confirmadas</span>
               <span className="stat-card__value">{stats.confirmedBookings}</span>
@@ -156,17 +171,17 @@ function AdminDashboard() {
           <h2 className="section-title">Accesos rápidos</h2>
           <div className="quick-grid">
             <Link to="/admin/properties" className="quick-card">
-              <span className="quick-icon">🏠</span>
+              <span className="quick-icon"><Home size={22} /></span>
               <span className="quick-label">Agregar propiedad</span>
               <span className="quick-arrow">→</span>
             </Link>
             <Link to="/admin/bookings" className="quick-card">
-              <span className="quick-icon">📋</span>
+              <span className="quick-icon"><ClipboardList size={22} /></span>
               <span className="quick-label">Ver todas las citas</span>
               <span className="quick-arrow">→</span>
             </Link>
             <Link to="/" className="quick-card" target="_blank" rel="noopener noreferrer">
-              <span className="quick-icon">🌐</span>
+              <span className="quick-icon"><Globe size={22} /></span>
               <span className="quick-label">Ver sitio público</span>
               <span className="quick-arrow">↗</span>
             </Link>
@@ -182,7 +197,9 @@ function AdminDashboard() {
 
           {recentBookings.length === 0 ? (
             <div className="empty-state">
-              <div className="empty-icon">📭</div>
+              <div className="empty-icon">
+                <Mail size={48} strokeWidth={1.5} />
+              </div>
               <h3>Sin citas aún</h3>
               <p>Las citas de clientes aparecerán aquí.</p>
             </div>
@@ -217,8 +234,9 @@ function AdminDashboard() {
                           b.status === 'confirmada' ? 'confirmed' :
                           b.status === 'cancelada'  ? 'cancelled' : 'pending'
                         }`}>
-                          {b.status === 'pendiente'  ? '⏳ Pendiente' :
-                           b.status === 'confirmada' ? '✅ Confirmada' : '❌ Cancelada'}
+                          {b.status === 'pendiente'  && <><Clock size={12} /> Pendiente</>}
+                          {b.status === 'confirmada' && <><CheckCircle size={12} /> Confirmada</>}
+                          {b.status === 'cancelada'  && <>Cancelada</>}
                         </span>
                       </td>
                     </tr>
