@@ -127,16 +127,19 @@ function AgentAvailability() {
 
   if (loading) {
     return (
-      <div className="availability-container">
-        <div className="loading">
-          <div className="spinner" />
-          <p>Cargando configuración...</p>
+      <div className="agent-dark-page">
+        <div className="availability-container">
+          <div className="loading">
+            <div className="spinner" />
+            <p>Cargando configuración...</p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
+    <div className="agent-dark-page">
     <div className="availability-container">
       <div className="availability-header">
         <Clock size={32} />
@@ -207,6 +210,7 @@ function AgentAvailability() {
         <AlertCircle size={16} />
         <p>Esta configuración será usada al momento de asignar citas. Solo se mostrarán los horarios disponibles.</p>
       </div>
+    </div>
     </div>
   );
 }

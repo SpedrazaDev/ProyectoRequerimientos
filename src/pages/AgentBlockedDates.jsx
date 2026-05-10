@@ -148,16 +148,19 @@ function AgentBlockedDates() {
 
   if (loading) {
     return (
-      <div className="blocked-dates-container">
-        <div className="loading">
-          <div className="spinner" />
-          <p>Cargando fechas bloqueadas...</p>
+      <div className="agent-dark-page">
+        <div className="blocked-dates-container">
+          <div className="loading">
+            <div className="spinner" />
+            <p>Cargando fechas bloqueadas...</p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
+    <div className="agent-dark-page">
     <div className="blocked-dates-container">
       <div className="blocked-dates-header">
         <CalendarIcon size={32} />
@@ -249,6 +252,7 @@ function AgentBlockedDates() {
         <AlertCircle size={16} />
         <p>Las fechas bloqueadas no estarán disponibles para asignación de citas en el calendario del administrador.</p>
       </div>
+    </div>
     </div>
   );
 }

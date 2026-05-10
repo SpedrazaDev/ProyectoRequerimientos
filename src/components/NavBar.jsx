@@ -5,9 +5,10 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { auth, db } from '../firebase';
-import { 
-  Home, LogOut, LayoutDashboard, Building2, Calendar as CalendarIcon, 
-  Users, MessageSquare, DollarSign, Menu, X, TrendingUp, BarChart3
+import {
+  Home, LogOut, LayoutDashboard, Building2, Calendar as CalendarIcon,
+  Users, MessageSquare, DollarSign, Menu, X, BarChart3,
+  Clock, BanIcon
 } from 'lucide-react';
 import './Navbar.css';
 
@@ -162,14 +163,6 @@ function Navbar({ adminUser }) {
                 Reportes
               </Link>
               <Link 
-                  to="/admin/funnel" 
-                  className={`navbar__link ${isActive('/admin/funnel') ? 'navbar__link--active' : ''}`}
-                  onClick={closeMenu}
-                >
-                  <TrendingUp size={12} />
-                  Embudo de Ventas
-                </Link>
-              <Link 
                 to="/admin/sales" 
                 className={`navbar__link ${isActive('/admin/sales') ? 'navbar__link--active' : ''}`}
                 onClick={closeMenu}
@@ -177,8 +170,16 @@ function Navbar({ adminUser }) {
                 <DollarSign size={12} />
                 Reporte Ventas
               </Link>
-              <Link 
-                to="/admin/employees" 
+              <Link
+                to="/admin/crm"
+                className={`navbar__link ${isActive('/admin/crm') ? 'navbar__link--active' : ''}`}
+                onClick={closeMenu}
+              >
+                <Users size={12} />
+                CRM
+              </Link>
+              <Link
+                to="/admin/employees"
                 className={`navbar__link ${isActive('/admin/employees') ? 'navbar__link--active' : ''}`}
                 onClick={closeMenu}
               >
@@ -217,13 +218,29 @@ function Navbar({ adminUser }) {
                 <CalendarIcon size={12} />
                 Mi calendario
               </Link>
-              <Link 
-                to="/agent/sales" 
+              <Link
+                to="/agent/sales"
                 className={`navbar__link ${isActive('/agent/sales') ? 'navbar__link--active' : ''}`}
                 onClick={closeMenu}
               >
                 <DollarSign size={12} />
                 Registrar Venta
+              </Link>
+              <Link
+                to="/agent/availability"
+                className={`navbar__link ${isActive('/agent/availability') ? 'navbar__link--active' : ''}`}
+                onClick={closeMenu}
+              >
+                <Clock size={12} />
+                Disponibilidad
+              </Link>
+              <Link
+                to="/agent/blocked-dates"
+                className={`navbar__link ${isActive('/agent/blocked-dates') ? 'navbar__link--active' : ''}`}
+                onClick={closeMenu}
+              >
+                <BanIcon size={12} />
+                Días Bloqueados
               </Link>
               <button className="navbar__link navbar__link--logout" onClick={handleLogout}>
                 <LogOut size={12} />

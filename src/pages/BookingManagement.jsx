@@ -6,7 +6,7 @@ import {
   doc, query, orderBy, serverTimestamp, where
 } from 'firebase/firestore';
 import { db, auth } from '../firebase';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   RefreshCw, Mail, Clock, CheckCircle, X, 
   Phone, MessageSquare, Trash2, ClipboardList, Calendar, UserCheck 
@@ -50,6 +50,7 @@ function BookingManagement() {
   const [userRole, setUserRole] = useState('');
 
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -173,7 +174,27 @@ function BookingManagement() {
       );
 
       closeAssignModal();
-      alert('✅ Cita confirmada y fecha asignada');
+
+      // HU-028: Trigger automático cita → venta
+      const confirmedBooking = bookings.find(b => b.id === assigningId);
+      const registerSale = window.confirm(
+        '✅ Cita confirmada.\n\n¿Deseas registrar esta cita como venta ahora?'
+      );
+      if (registerSale) {
+        const salesPath = location.pathname.startsWith('/agent') ? '/agent/sales' : '/admin/sales';
+        navigate(salesPath, {
+          state: {
+            fromBooking: {
+              bookingId: assigningId,
+              propertyId: confirmedBooking?.propertyId || '',
+              clientEmail: confirmedBooking?.email || '',
+              assignedTo: userEmail,
+            }
+          }
+        });
+      } else {
+        alert('✅ Cita confirmada y fecha asignada');
+      }
     } catch (err) {
       console.error('Error asignando cita:', err);
       alert('Error al asignar la cita.');

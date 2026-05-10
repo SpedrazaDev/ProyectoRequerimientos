@@ -3,9 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { collection, getDocs, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
-import { 
-  TrendingUp, Users, Calendar, DollarSign, 
-  CheckCircle, Clock, XCircle, Award
+import {
+  TrendingUp, Users, Calendar, DollarSign,
+  CheckCircle, Clock, XCircle, Award, Trophy, Star
 } from 'lucide-react';
 import {
   PieChart, Pie, Cell, BarChart, Bar, LineChart, Line,
@@ -158,7 +158,7 @@ function Reports() {
     cancelled: filteredBookings.filter(b => b.status === 'cancelada').length,
     totalSales: filteredSales.length,
     totalRevenue: filteredSales.reduce((sum, s) => sum + (s.saleAmount || 0), 0),
-    conversionRate: filteredBookings.length > 0 
+    conversionRate: filteredBookings.length > 0
       ? ((filteredSales.length / filteredBookings.length) * 100).toFixed(1)
       : 0,
   };
@@ -198,6 +198,30 @@ function Reports() {
         : 0,
     };
   }).filter(agent => agent.citas > 0 || agent.ventas > 0);
+
+  // HU-037-040: Métricas adicionales
+  const recordSale = filteredSales.length > 0
+    ? Math.max(...filteredSales.map(s => s.saleAmount || 0))
+    : 0;
+
+  const topAgent = agentStats.length > 0
+    ? agentStats.reduce((best, a) => Number(a.ventas) > Number(best.ventas) ? a : best, agentStats[0])
+    : null;
+
+  const avgDaysToSale = (() => {
+    const diffs = filteredSales.map(sale => {
+      const booking = filteredBookings.find(b =>
+        b.propertyId === sale.propertyId && b.status === 'confirmada'
+      );
+      if (!booking) return null;
+      const bookingDate = booking.createdAt?.toDate ? booking.createdAt.toDate() : new Date(booking.createdAt);
+      const saleDate = sale.createdAt?.toDate ? sale.createdAt.toDate() : new Date(sale.createdAt);
+      const diff = (saleDate - bookingDate) / (1000 * 60 * 60 * 24);
+      return diff >= 0 ? diff : null;
+    }).filter(d => d !== null);
+    if (diffs.length === 0) return null;
+    return (diffs.reduce((sum, d) => sum + d, 0) / diffs.length).toFixed(1);
+  })();
 
   const formatPrice = (price) =>
     new Intl.NumberFormat('en-US', {
@@ -324,6 +348,40 @@ function Reports() {
             <div className="kpi-content">
               <span className="kpi-label">Conversión</span>
               <span className="kpi-value">{kpis.conversionRate}%</span>
+            </div>
+          </div>
+
+          <div className="kpi-card kpi-card--gold">
+            <div className="kpi-icon">
+              <Trophy size={28} />
+            </div>
+            <div className="kpi-content">
+              <span className="kpi-label">Récord de venta</span>
+              <span className="kpi-value">{formatPrice(recordSale)}</span>
+            </div>
+          </div>
+
+          <div className="kpi-card kpi-card--purple">
+            <div className="kpi-icon">
+              <Star size={28} />
+            </div>
+            <div className="kpi-content">
+              <span className="kpi-label">Agente top</span>
+              <span className="kpi-value" style={{ fontSize: '1rem' }}>
+                {topAgent ? `${topAgent.name} (${topAgent.ventas})` : '—'}
+              </span>
+            </div>
+          </div>
+
+          <div className="kpi-card kpi-card--blue">
+            <div className="kpi-icon">
+              <Clock size={28} />
+            </div>
+            <div className="kpi-content">
+              <span className="kpi-label">Tiempo promedio cita→venta</span>
+              <span className="kpi-value">
+                {avgDaysToSale !== null ? `${avgDaysToSale} días` : '—'}
+              </span>
             </div>
           </div>
 

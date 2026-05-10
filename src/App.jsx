@@ -23,12 +23,16 @@ import EmployeeManagement from './pages/EmployeeManagement';
 import AdminCalendar from './pages/AdminCalendar';
 import SalesReport from './pages/SalesReport';
 import Reports from './pages/Reports';
-import SalesFunnel from './pages/SalesFunnel';
 
 // Pages - Agent
 import AgentDashboard from './pages/AgentDashboard';
 import AgentCalendar from './pages/AgentCalendar';
 import SalesManagement from './pages/SalesManagement';
+import AgentAvailability from './pages/AgentAvailability';
+import AgentBlockedDates from './pages/AgentBlockedDates';
+
+// Pages - CRM
+import CRM from './pages/CRM';
 
 import './App.css';
 
@@ -118,16 +122,10 @@ function App() {
             </ProtectedRoute>
           } />
 
-          {/* FASE 3: Reportes y Embudo */}
+          {/* FASE 3: Reportes */}
           <Route path="/admin/reports" element={
             <ProtectedRoute user={user}>
               <Reports />
-            </ProtectedRoute>
-          } />
-
-          <Route path="/admin/funnel" element={
-            <ProtectedRoute user={user}>
-              <SalesFunnel />
             </ProtectedRoute>
           } />
 
@@ -153,6 +151,25 @@ function App() {
           <Route path="/agent/sales" element={
             <ProtectedRoute user={user}>
               <SalesManagement />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/agent/availability" element={
+            <ProtectedRoute user={user}>
+              <AgentAvailability />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/agent/blocked-dates" element={
+            <ProtectedRoute user={user}>
+              <AgentBlockedDates />
+            </ProtectedRoute>
+          } />
+
+          {/* RUTAS CRM */}
+          <Route path="/admin/crm" element={
+            <ProtectedRoute user={user}>
+              <CRM />
             </ProtectedRoute>
           } />
 

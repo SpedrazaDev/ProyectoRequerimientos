@@ -6,6 +6,7 @@ import {
   serverTimestamp, query, where
 } from 'firebase/firestore';
 import { db, auth } from '../firebase';
+import { useLocation } from 'react-router-dom';
 import { DollarSign, CheckCircle, Home } from 'lucide-react';
 import './SalesManagement.css';
 
@@ -14,10 +15,19 @@ function SalesManagement() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [selectedPropertyId, setSelectedPropertyId] = useState('');
+  const location = useLocation();
 
   useEffect(() => {
     loadProperties();
   }, []);
+
+  // Pre-fill property when navigating from a confirmed booking (HU-028)
+  useEffect(() => {
+    const fromBooking = location.state?.fromBooking;
+    if (fromBooking?.propertyId) {
+      setSelectedPropertyId(fromBooking.propertyId);
+    }
+  }, [location.state]);
 
   const loadProperties = async () => {
     setLoading(true);

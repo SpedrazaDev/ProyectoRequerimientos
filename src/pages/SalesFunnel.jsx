@@ -31,6 +31,7 @@ function SalesFunnel() {
     propertyId: '',
     stage: 'lead',
     estimatedValue: '',
+    probability: '50',
     notes: '',
   });
 
@@ -64,6 +65,7 @@ function SalesFunnel() {
       propertyId: '',
       stage: 'lead',
       estimatedValue: '',
+      probability: '50',
       notes: '',
     });
     setEditingId(null);
@@ -108,6 +110,7 @@ function SalesFunnel() {
       propertyId: opp.propertyId || '',
       stage: opp.stage || 'lead',
       estimatedValue: opp.estimatedValue || '',
+      probability: opp.probability !== undefined ? String(opp.probability) : '50',
       notes: opp.notes || '',
     });
     setEditingId(opp.id);
@@ -152,6 +155,13 @@ function SalesFunnel() {
   const conversionRate = totalOpportunities > 0
     ? ((opportunities.filter(o => o.stage === 'closed').length / totalOpportunities) * 100).toFixed(1)
     : 0;
+
+  const weightedPipelineValue = opportunities
+    .filter(o => o.stage !== 'closed')
+    .reduce((sum, o) => {
+      const prob = Number(o.probability) || 50;
+      return sum + (Number(o.estimatedValue) || 0) * (prob / 100);
+    }, 0);
 
   const formatPrice = (price) =>
     new Intl.NumberFormat('en-US', {
@@ -222,6 +232,14 @@ function SalesFunnel() {
               <span className="metric-value">{conversionRate}%</span>
             </div>
           </div>
+
+          <div className="metric-card">
+            <TrendingUp size={24} />
+            <div>
+              <span className="metric-label">Pipeline ponderado</span>
+              <span className="metric-value">{formatPrice(weightedPipelineValue)}</span>
+            </div>
+          </div>
         </div>
 
         {/* Embudo */}
@@ -273,7 +291,10 @@ function SalesFunnel() {
 
                         <p className="opp-property">{opp.propertyTitle}</p>
                         <p className="opp-value">{formatPrice(opp.estimatedValue)}</p>
-                        
+                        <p className="opp-probability">
+                          Probabilidad: <strong>{opp.probability !== undefined ? opp.probability : 50}%</strong>
+                        </p>
+
                         {opp.notes && (
                           <p className="opp-notes">{opp.notes}</p>
                         )}
@@ -384,6 +405,21 @@ function SalesFunnel() {
                     value={formData.estimatedValue}
                     onChange={(e) => setFormData(prev => ({ ...prev, estimatedValue: e.target.value }))}
                     required
+                  />
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Probabilidad de venta: {formData.probability}%</label>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="5"
+                    value={formData.probability}
+                    onChange={(e) => setFormData(prev => ({ ...prev, probability: e.target.value }))}
+                    style={{ width: '100%' }}
                   />
                 </div>
               </div>
