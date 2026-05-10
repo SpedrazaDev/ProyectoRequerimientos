@@ -1,10 +1,10 @@
 // src/pages/EmployeeManagement.jsx
-// CRUD de Agentes de Ventas (Admin crea cuentas para agentes)
+// ACTUALIZADO: Incluye activar/desactivar agentes
 import React, { useState, useEffect } from 'react';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { db, auth } from '../firebase';
-import { Plus, Edit2, Trash2, Users, Mail, UserCheck, X } from 'lucide-react';
+import { Plus, Edit2, Trash2, Users, Mail, UserCheck, X, UserX, ToggleLeft, ToggleRight } from 'lucide-react';
 import './EmployeeManagement.css';
 
 const EMPTY_FORM = {
@@ -52,7 +52,6 @@ function EmployeeManagement() {
     else if (!/\S+@\S+\.\S+/.test(formData.email)) errs.email = 'Email no válido.';
     if (!formData.phone.trim()) errs.phone = 'El teléfono es requerido.';
     
-    // Solo validar password si es nuevo agente
     if (!editingId && !formData.password.trim()) {
       errs.password = 'La contraseña es requerida.';
     } else if (!editingId && formData.password.length < 6) {
@@ -75,7 +74,7 @@ function EmployeeManagement() {
       name: employee.name || '',
       email: employee.email || '',
       phone: employee.phone || '',
-      password: '', // No mostrar password actual
+      password: '',
     });
     setFormErrors({});
     setEditingId(employee.id);
@@ -98,33 +97,30 @@ function EmployeeManagement() {
         name: formData.name.trim(),
         email: formData.email.trim().toLowerCase(),
         phone: formData.phone.trim(),
-        role: 'agent', // Rol fijo
+        role: 'agent',
       };
 
       if (editingId) {
-        // Actualizar agente existente
         await updateDoc(doc(db, 'employees', editingId), {
           ...dataToSave,
           updatedAt: serverTimestamp(),
         });
       } else {
-        // Crear nuevo agente + cuenta en Auth
         try {
-          // 1. Crear usuario en Firebase Auth
           const userCredential = await createUserWithEmailAndPassword(
             auth,
             formData.email.trim().toLowerCase(),
             formData.password
           );
 
-          // 2. Guardar en Firestore
           await addDoc(collection(db, 'employees'), {
             ...dataToSave,
             uid: userCredential.user.uid,
+            status: 'activo', // ← Activo por defecto
             createdAt: serverTimestamp(),
           });
 
-          alert('✓ Agente creado exitosamente. Ya puede iniciar sesión.');
+          alert('✓ Agente creado exitosamente.');
         } catch (authErr) {
           if (authErr.code === 'auth/email-already-in-use') {
             setFormErrors({ email: 'Este email ya está registrado.' });
@@ -139,7 +135,7 @@ function EmployeeManagement() {
       await loadEmployees();
     } catch (err) {
       console.error('Error guardando agente:', err);
-      alert('Error al guardar. Por favor intenta de nuevo.');
+      alert('Error al guardar.');
     } finally {
       setSaving(false);
     }
@@ -151,10 +147,25 @@ function EmployeeManagement() {
       await deleteDoc(doc(db, 'employees', deleteId));
       setDeleteId(null);
       await loadEmployees();
-      alert('Agente eliminado. Nota: La cuenta en Firebase Auth debe eliminarse manualmente desde la consola.');
+      alert('Agente eliminado. La cuenta de Auth debe eliminarse manualmente.');
     } catch (err) {
       console.error('Error eliminando:', err);
-      alert('Error al eliminar el agente.');
+      alert('Error al eliminar.');
+    }
+  };
+
+  // ← NUEVA FUNCIÓN: Activar/Desactivar
+  const toggleStatus = async (employee) => {
+    const newStatus = employee.status === 'activo' ? 'inactivo' : 'activo';
+    try {
+      await updateDoc(doc(db, 'employees', employee.id), {
+        status: newStatus,
+        updatedAt: serverTimestamp(),
+      });
+      await loadEmployees();
+    } catch (err) {
+      console.error('Error cambiando estado:', err);
+      alert('Error al cambiar el estado.');
     }
   };
 
@@ -168,7 +179,6 @@ function EmployeeManagement() {
     <div className="admin-page">
       <div className="admin-container">
 
-        {/* Header */}
         <div className="pm-header">
           <div>
             <h1 className="dash-title">Gestión de Agentes</h1>
@@ -182,7 +192,6 @@ function EmployeeManagement() {
           </button>
         </div>
 
-        {/* Formulario */}
         {showForm && (
           <div className="pm-form-card">
             <h2 className="pm-form-title">
@@ -214,7 +223,7 @@ function EmployeeManagement() {
                     onChange={handleInput}
                     className={`form-control ${formErrors.email ? 'form-control--error' : ''}`}
                     placeholder="ana.garcia@empresa.com"
-                    disabled={!!editingId} // No permitir cambiar email al editar
+                    disabled={!!editingId}
                   />
                   {formErrors.email && <span className="field-error">{formErrors.email}</span>}
                   {editingId && <small className="field-hint">El email no puede modificarse</small>}
@@ -264,7 +273,6 @@ function EmployeeManagement() {
           </div>
         )}
 
-        {/* Tabla */}
         {loading ? (
           <div className="loading-inline">
             <div className="spinner-sm" />
@@ -276,7 +284,7 @@ function EmployeeManagement() {
               <Users size={48} strokeWidth={1.5} />
             </div>
             <h3>Sin agentes</h3>
-            <p>Agrega tu primer agente de ventas con el botón de arriba.</p>
+            <p>Agrega tu primer agente de ventas.</p>
           </div>
         ) : (
           <div className="pm-table-wrap">
@@ -286,17 +294,17 @@ function EmployeeManagement() {
                   <th>Agente</th>
                   <th>Email</th>
                   <th>Teléfono</th>
-                  <th>Rol</th>
+                  <th>Estado</th>
                   <th>Creado</th>
                   <th>Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {employees.map(emp => (
-                  <tr key={emp.id}>
+                  <tr key={emp.id} style={{ opacity: emp.status === 'inactivo' ? 0.6 : 1 }}>
                     <td>
                       <div className="table-title-cell">
-                        <UserCheck size={16} style={{ color: 'var(--gold)' }} />
+                        {emp.status === 'activo' ? <UserCheck size={16} style={{ color: 'var(--gold)' }} /> : <UserX size={16} style={{ color: '#888' }} />}
                         <strong>{emp.name}</strong>
                       </div>
                     </td>
@@ -308,13 +316,21 @@ function EmployeeManagement() {
                     </td>
                     <td>{emp.phone}</td>
                     <td>
-                      <span className="type-chip" style={{ background: 'rgba(52,152,219,.1)', color: '#3498db' }}>
-                        Agente
+                      <span className={`status-badge ${emp.status === 'activo' ? 'status-active' : 'status-inactive'}`}>
+                        {emp.status === 'activo' ? 'Activo' : 'Inactivo'}
                       </span>
                     </td>
                     <td className="date-cell">{formatDate(emp.createdAt)}</td>
                     <td>
                       <div className="table-actions">
+                        <button
+                          className={`btn btn-sm ${emp.status === 'activo' ? 'btn-outline' : 'btn-success'}`}
+                          onClick={() => toggleStatus(emp)}
+                          title={emp.status === 'activo' ? 'Desactivar' : 'Activar'}
+                        >
+                          {emp.status === 'activo' ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
+                          {emp.status === 'activo' ? 'Desactivar' : 'Activar'}
+                        </button>
                         <button
                           className="btn btn-sm btn-dark"
                           onClick={() => openEdit(emp)}
@@ -340,16 +356,15 @@ function EmployeeManagement() {
           </div>
         )}
 
-        {/* Modal */}
         {deleteId && (
           <div className="modal-overlay" onClick={() => setDeleteId(null)}>
             <div className="modal" onClick={(e) => e.stopPropagation()}>
               <div className="modal__icon">⚠️</div>
               <h3>¿Eliminar agente?</h3>
               <p>
-                Esta acción eliminará el registro del agente de la base de datos.
+                Esta acción eliminará el registro del agente.
                 <br /><br />
-                <strong>Nota:</strong> Debes eliminar manualmente la cuenta en Firebase Auth desde la consola.
+                <strong>Nota:</strong> La cuenta de Auth debe eliminarse manualmente.
               </p>
               <div className="modal__actions">
                 <button className="btn btn-outline" onClick={() => setDeleteId(null)}>

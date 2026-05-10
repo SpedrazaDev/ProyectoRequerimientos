@@ -1,61 +1,65 @@
 // src/pages/AgentDashboard.jsx
-// Dashboard para Agentes de Ventas: Ver citas y catálogo
+// Dashboard del agente - Rediseñado
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { collection, getDocs, query, orderBy, limit, where, updateDoc, doc } from 'firebase/firestore';
-import { auth, db } from '../firebase';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { db, auth } from '../firebase';
 import { 
-  Calendar, Clock, CheckCircle, X, Home, 
-  RefreshCw, Phone, Mail, MessageSquare 
+  Home, Calendar, DollarSign, TrendingUp, 
+  Clock, CheckCircle, MapPin, Bed, Bath, 
+  Maximize, Package
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import './AgentDashboard.css';
 
-const formatDate = (ts) => {
-  if (!ts) return '—';
-  const d = ts?.toDate ? ts.toDate() : new Date(ts);
-  return new Intl.DateTimeFormat('es-CR', {
-    day: '2-digit', month: 'short', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
-  }).format(d);
-};
-
 function AgentDashboard() {
-  const [bookings, setBookings] = useState([]);
-  const [properties, setProperties] = useState([]);
+  const [stats, setStats] = useState({
+    properties: 0,
+    bookings: 0,
+    sales: 0,
+    revenue: 0,
+  });
+  const [recentBookings, setRecentBookings] = useState([]);
+  const [recentSales, setRecentSales] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeView, setActiveView] = useState('bookings'); // 'bookings' o 'properties'
-  const [updating, setUpdating] = useState(null);
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    loadData();
+  }, []);
 
   const loadData = async () => {
     setLoading(true);
     try {
-      // 1. Cargar citas
-      let bookingsData = [];
-      try {
-        const bookSnap = await getDocs(
-          query(collection(db, 'bookings'), orderBy('createdAt', 'desc'), limit(50))
-        );
-        bookingsData = bookSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-      } catch {
-        const bookSnap = await getDocs(collection(db, 'bookings'));
-        bookingsData = bookSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-      }
-      setBookings(bookingsData);
+      const user = auth.currentUser;
+      if (!user) return;
 
-      // 2. Cargar propiedades (mismo catálogo que clientes)
-      let propsData = [];
-      try {
-        const propSnap = await getDocs(
-          query(collection(db, 'properties'), orderBy('createdAt', 'desc'), limit(50))
-        );
-        propsData = propSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-      } catch {
-        const propSnap = await getDocs(collection(db, 'properties'));
-        propsData = propSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-      }
-      setProperties(propsData);
+      // Cargar citas
+      const bookingsSnap = await getDocs(
+        query(collection(db, 'bookings'), where('status', '==', 'pendiente'))
+      );
+      const bookingsData = bookingsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+      // Cargar ventas del agente
+      const salesSnap = await getDocs(
+        query(collection(db, 'sales'), where('agentEmail', '==', user.email))
+      );
+      const salesData = salesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+      // Calcular revenue
+      const totalRevenue = salesData.reduce((sum, sale) => sum + (sale.saleAmount || 0), 0);
+
+      // Cargar propiedades
+      const propertiesSnap = await getDocs(collection(db, 'properties'));
+      const propertiesCount = propertiesSnap.size;
+
+      setStats({
+        properties: propertiesCount,
+        bookings: bookingsData.length,
+        sales: salesData.length,
+        revenue: totalRevenue,
+      });
+
+      setRecentBookings(bookingsData.slice(0, 3));
+      setRecentSales(salesData.slice(0, 3));
 
     } catch (err) {
       console.error('Error cargando datos:', err);
@@ -64,279 +68,213 @@ function AgentDashboard() {
     }
   };
 
-  const changeStatus = async (id, newStatus) => {
-    setUpdating(id);
-    try {
-      await updateDoc(doc(db, 'bookings', id), { status: newStatus });
-      setBookings(prev =>
-        prev.map(b => b.id === id ? { ...b, status: newStatus } : b)
-      );
-    } catch (err) {
-      console.error('Error actualizando estado:', err);
-      alert('Error al actualizar. Intenta de nuevo.');
-    } finally {
-      setUpdating(null);
-    }
-  };
+  const formatPrice = (price) =>
+    new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      maximumFractionDigits: 0,
+    }).format(price);
 
-  const agentEmail = auth.currentUser?.email || 'Agente';
-  const stats = {
-    totalBookings: bookings.length,
-    pending: bookings.filter(b => b.status === 'pendiente').length,
-    confirmed: bookings.filter(b => b.status === 'confirmada').length,
-    totalProperties: properties.length,
+  const formatDate = (ts) => {
+    if (!ts) return '—';
+    const d = ts?.toDate ? ts.toDate() : new Date(ts);
+    return new Intl.DateTimeFormat('es-CR', {
+      day: '2-digit',
+      month: 'short',
+    }).format(d);
   };
 
   if (loading) {
     return (
-      <div className="admin-page">
-        <div className="loading-inline">
-          <div className="spinner-sm" />
-          <span>Cargando dashboard...</span>
+      <div className="agent-dashboard">
+        <div className="loading-container">
+          <div className="spinner" />
+          <p>Cargando panel...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="admin-page">
-      <div className="admin-container">
+    <div className="agent-dashboard">
+      <div className="dashboard-container">
 
         {/* Header */}
-        <div className="dash-header">
+        <div className="dashboard-header">
           <div>
-            <h1 className="dash-title">Dashboard de Agente</h1>
-            <p className="dash-sub">Bienvenido, <strong>{agentEmail}</strong></p>
+            <h1 className="dashboard-title">Mi Panel</h1>
+            <p className="dashboard-subtitle">
+              Resumen de tu actividad
+            </p>
           </div>
-          <button className="btn btn-dark" onClick={loadData}>
-            <RefreshCw size={16} />
-            Actualizar
-          </button>
         </div>
 
-        {/* Stats */}
+        {/* Estadísticas principales */}
         <div className="stats-grid">
-          <div className="stat-card stat-card--gold">
-            <div className="stat-card__icon"><Calendar size={28} /></div>
-            <div className="stat-card__body">
-              <span className="stat-card__label">Citas totales</span>
-              <span className="stat-card__value">{stats.totalBookings}</span>
+          
+          <Link to="/agent/properties" className="stat-card stat-card--blue">
+            <div className="stat-icon">
+              <Home size={28} strokeWidth={2} />
             </div>
-          </div>
+            <div className="stat-content">
+              <span className="stat-label">Propiedades</span>
+              <span className="stat-value">{stats.properties}</span>
+            </div>
+          </Link>
 
-          <div className="stat-card stat-card--orange">
-            <div className="stat-card__icon"><Clock size={28} /></div>
-            <div className="stat-card__body">
-              <span className="stat-card__label">Pendientes</span>
-              <span className="stat-card__value">{stats.pending}</span>
+          <Link to="/agent/bookings" className="stat-card stat-card--orange">
+            <div className="stat-icon">
+              <Clock size={28} strokeWidth={2} />
             </div>
-          </div>
+            <div className="stat-content">
+              <span className="stat-label">Citas pendientes</span>
+              <span className="stat-value">{stats.bookings}</span>
+            </div>
+          </Link>
 
-          <div className="stat-card stat-card--green">
-            <div className="stat-card__icon"><CheckCircle size={28} /></div>
-            <div className="stat-card__body">
-              <span className="stat-card__label">Confirmadas</span>
-              <span className="stat-card__value">{stats.confirmed}</span>
+          <Link to="/agent/calendar" className="stat-card stat-card--green">
+            <div className="stat-icon">
+              <Calendar size={28} strokeWidth={2} />
             </div>
-          </div>
+            <div className="stat-content">
+              <span className="stat-label">Mi calendario</span>
+              <span className="stat-value">Ver</span>
+            </div>
+          </Link>
 
-          <div className="stat-card stat-card--blue">
-            <div className="stat-card__icon"><Home size={28} /></div>
-            <div className="stat-card__body">
-              <span className="stat-card__label">Propiedades</span>
-              <span className="stat-card__value">{stats.totalProperties}</span>
+          <Link to="/agent/sales" className="stat-card stat-card--gold">
+            <div className="stat-icon">
+              <DollarSign size={28} strokeWidth={2} />
             </div>
-          </div>
+            <div className="stat-content">
+              <span className="stat-label">Ventas realizadas</span>
+              <span className="stat-value">{stats.sales}</span>
+            </div>
+          </Link>
+
         </div>
 
-        {/* Tabs */}
-        <div className="agent-tabs">
-          <button
-            className={`agent-tab ${activeView === 'bookings' ? 'agent-tab--active' : ''}`}
-            onClick={() => setActiveView('bookings')}
-          >
-            <Calendar size={16} />
-            Gestión de Citas
-          </button>
-          <button
-            className={`agent-tab ${activeView === 'properties' ? 'agent-tab--active' : ''}`}
-            onClick={() => setActiveView('properties')}
-          >
-            <Home size={16} />
-            Catálogo de Propiedades
-          </button>
-        </div>
+        {/* Secciones de contenido */}
+        <div className="dashboard-sections">
 
-        {/* Vista de Citas */}
-        {activeView === 'bookings' && (
-          <div className="agent-section">
-            <h2 className="section-title">Citas recientes</h2>
-            
-            {bookings.length === 0 ? (
-              <div className="empty-state">
-                <div className="empty-icon"><Mail size={48} strokeWidth={1.5} /></div>
-                <h3>Sin citas</h3>
-                <p>Cuando los clientes soliciten visitas, aparecerán aquí.</p>
+          {/* Citas recientes */}
+          <div className="dashboard-section">
+            <div className="section-header">
+              <h2>
+                <Clock size={20} />
+                Citas pendientes
+              </h2>
+              <Link to="/agent/bookings" className="btn btn-sm btn-outline">
+                Ver todas
+              </Link>
+            </div>
+
+            {recentBookings.length === 0 ? (
+              <div className="empty-section">
+                <CheckCircle size={48} strokeWidth={1.5} color="#ccc" />
+                <p>Sin citas pendientes</p>
               </div>
             ) : (
-              <div className="bookings-list">
-                {bookings.map(booking => {
-                  const StatusIcon = booking.status === 'confirmada' ? CheckCircle :
-                                   booking.status === 'cancelada' ? X : Clock;
-                  const statusClass = booking.status === 'confirmada' ? 'confirmed' :
-                                    booking.status === 'cancelada' ? 'cancelled' : 'pending';
-                  const isUpdating = updating === booking.id;
-
-                  return (
-                    <div key={booking.id} className={`booking-card booking-card--${statusClass}`}>
-                      <div className="booking-card__header">
-                        <div className="client-info">
-                          <strong>{booking.name}</strong>
-                          <small>{booking.email}</small>
-                        </div>
-                        <span className={`badge badge-${statusClass}`}>
-                          <StatusIcon size={12} />
-                          {booking.status === 'pendiente' && 'Pendiente'}
-                          {booking.status === 'confirmada' && 'Confirmada'}
-                          {booking.status === 'cancelada' && 'Cancelada'}
-                        </span>
+              <div className="bookings-mini-list">
+                {recentBookings.map(booking => (
+                  <div key={booking.id} className="booking-mini-card">
+                    <div className="booking-mini-header">
+                      <div className="client-avatar-mini">
+                        {booking.name?.charAt(0)?.toUpperCase() || '?'}
                       </div>
-
-                      <div className="booking-card__info">
-                        <div className="info-row">
-                          <span className="info-label">Propiedad:</span>
-                          <span>{booking.propertyTitle || '—'}</span>
-                        </div>
-                        <div className="info-row">
-                          <span className="info-label">Fecha y hora:</span>
-                          <span>{booking.date ? `${booking.date} · ${booking.time || '—'}` : '—'}</span>
-                        </div>
-                        <div className="info-row">
-                          <span className="info-label">Teléfono:</span>
-                          <a href={`tel:${booking.phone}`} className="phone-link">
-                            <Phone size={12} />
-                            {booking.phone}
-                          </a>
-                        </div>
-                        <div className="info-row">
-                          <span className="info-label">Recibida:</span>
-                          <span className="date-text">{formatDate(booking.createdAt)}</span>
-                        </div>
-                      </div>
-
-                      {booking.message && (
-                        <div className="booking-message">
-                          <strong>Mensaje:</strong>
-                          <p>"{booking.message}"</p>
-                        </div>
-                      )}
-
-                      <div className="booking-card__actions">
-                        <div className="action-group">
-                          {booking.status !== 'confirmada' && (
-                            <button
-                              className="btn btn-sm btn-success"
-                              onClick={() => changeStatus(booking.id, 'confirmada')}
-                              disabled={isUpdating}
-                            >
-                              <CheckCircle size={14} />
-                              {isUpdating ? '...' : 'Confirmar'}
-                            </button>
-                          )}
-                          {booking.status !== 'pendiente' && (
-                            <button
-                              className="btn btn-sm btn-outline"
-                              onClick={() => changeStatus(booking.id, 'pendiente')}
-                              disabled={isUpdating}
-                            >
-                              <Clock size={14} />
-                              Pendiente
-                            </button>
-                          )}
-                          {booking.status !== 'cancelada' && (
-                            <button
-                              className="btn btn-sm"
-                              style={{ background: 'rgba(231,76,60,.08)', color: 'var(--danger)', border: '1px solid rgba(231,76,60,.25)' }}
-                              onClick={() => changeStatus(booking.id, 'cancelada')}
-                              disabled={isUpdating}
-                            >
-                              <X size={14} />
-                              Cancelar
-                            </button>
-                          )}
-                        </div>
-
-                        <div className="action-group">
-                          <a href={`mailto:${booking.email}`} className="btn btn-sm btn-dark">
-                            <Mail size={14} />
-                            Email
-                          </a>
-                          <a
-                            href={`https://wa.me/${booking.phone?.replace(/\D/g, '')}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="btn btn-sm"
-                            style={{ background: '#25D366', color: 'white' }}
-                          >
-                            <MessageSquare size={14} />
-                            WhatsApp
-                          </a>
-                        </div>
+                      <div className="booking-mini-info">
+                        <strong>{booking.name}</strong>
+                        <small>{booking.propertyTitle}</small>
                       </div>
                     </div>
-                  );
-                })}
+                    <div className="booking-mini-date">
+                      {formatDate(booking.createdAt)}
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
-        )}
 
-        {/* Vista de Propiedades */}
-        {activeView === 'properties' && (
-          <div className="agent-section">
-            <h2 className="section-title">Catálogo de Propiedades</h2>
-            
-            {properties.length === 0 ? (
-              <div className="empty-state">
-                <div className="empty-icon"><Home size={48} strokeWidth={1.5} /></div>
-                <h3>Sin propiedades</h3>
-                <p>El catálogo de propiedades aparecerá aquí.</p>
+          {/* Ventas recientes */}
+          <div className="dashboard-section">
+            <div className="section-header">
+              <h2>
+                <TrendingUp size={20} />
+                Mis ventas
+              </h2>
+              <Link to="/agent/sales" className="btn btn-sm btn-outline">
+                Registrar nueva
+              </Link>
+            </div>
+
+            {recentSales.length === 0 ? (
+              <div className="empty-section">
+                <Package size={48} strokeWidth={1.5} color="#ccc" />
+                <p>Sin ventas registradas</p>
               </div>
             ) : (
-              <div className="properties-grid">
-                {properties.map(prop => {
-                  const firstImage = Array.isArray(prop.images) ? prop.images[0] : (prop.imageUrl || '');
-                  const formatPrice = (p) =>
-                    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(p);
-
-                  return (
-                    <div key={prop.id} className="property-card-simple">
-                      {firstImage && (
-                        <div className="property-card-simple__image">
-                          <img src={firstImage} alt={prop.title} loading="lazy" />
-                          <span className="property-type-badge">{prop.type}</span>
-                        </div>
-                      )}
-                      <div className="property-card-simple__body">
-                        <p className="property-price">{formatPrice(prop.price)}</p>
-                        <h3 className="property-title">{prop.title}</h3>
-                        <p className="property-location">📍 {prop.location}</p>
-                        <div className="property-features">
-                          {prop.bedrooms > 0 && <span>🛏 {prop.bedrooms}</span>}
-                          {prop.bathrooms > 0 && <span>🚿 {prop.bathrooms}</span>}
-                          <span>📐 {prop.area} m²</span>
-                        </div>
-                        <Link to={`/property/${prop.id}`} className="property-link" target="_blank">
-                          Ver detalles →
-                        </Link>
+              <div className="sales-mini-list">
+                {recentSales.map(sale => (
+                  <div key={sale.id} className="sale-mini-card">
+                    <div className="sale-mini-header">
+                      <Home size={18} color="#c9a84c" />
+                      <div className="sale-mini-info">
+                        <strong>{sale.propertyTitle}</strong>
+                        <small>
+                          <MapPin size={12} />
+                          {sale.propertyLocation}
+                        </small>
                       </div>
                     </div>
-                  );
-                })}
+                    <div className="sale-mini-price">
+                      {formatPrice(sale.saleAmount)}
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
-        )}
+
+        </div>
+
+        {/* Acciones rápidas */}
+        <div className="quick-actions">
+          <h2>Acciones rápidas</h2>
+          <div className="quick-actions-grid">
+            
+            <Link to="/agent/bookings?status=pendiente" className="quick-action-card">
+              <div className="quick-action-icon quick-action-icon--orange">
+                <Clock size={24} />
+              </div>
+              <div className="quick-action-content">
+                <strong>Asignar citas</strong>
+                <span>Programar visitas pendientes</span>
+              </div>
+            </Link>
+
+            <Link to="/agent/sales" className="quick-action-card">
+              <div className="quick-action-icon quick-action-icon--green">
+                <DollarSign size={24} />
+              </div>
+              <div className="quick-action-content">
+                <strong>Registrar venta</strong>
+                <span>Marcar propiedad como vendida</span>
+              </div>
+            </Link>
+
+            <Link to="/agent/calendar" className="quick-action-card">
+              <div className="quick-action-icon quick-action-icon--blue">
+                <Calendar size={24} />
+              </div>
+              <div className="quick-action-content">
+                <strong>Ver calendario</strong>
+                <span>Revisar citas programadas</span>
+              </div>
+            </Link>
+
+          </div>
+        </div>
 
       </div>
     </div>

@@ -1,13 +1,9 @@
 // src/pages/ClientHome.jsx
-// ─────────────────────────────────────────────────────────────────────
-//  Página principal pública: catálogo de propiedades con filtros - OPTIMIZADO
-//  ⚡ Solo carga las primeras 50 propiedades, no todas
-// ─────────────────────────────────────────────────────────────────────
-
+// ACTUALIZADO: Con paginación (10 propiedades por página) y ordenamiento
 import React, { useState, useEffect, useMemo } from 'react';
-import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, limit, where } from 'firebase/firestore';
 import { db } from '../firebase';
-import { Search } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import PropertyCard from '../components/PropertyCard';
 import './ClientHome.css';
 
@@ -19,21 +15,25 @@ const EMPTY_FILTERS = {
   search:   '',
 };
 
-function ClientHome() {
-  const [properties, setProperties]   = useState([]);
-  const [loading,    setLoading]       = useState(true);
-  const [error,      setError]         = useState('');
-  const [filters,    setFilters]       = useState(EMPTY_FILTERS);
+const ITEMS_PER_PAGE = 10; // ← PAGINACIÓN
 
-  // ── Cargar propiedades OPTIMIZADO (solo 50) ──
+function ClientHome() {
+  const [properties, setProperties] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [filters, setFilters] = useState(EMPTY_FILTERS);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [sortBy, setSortBy] = useState('recent'); // ← ORDENAMIENTO
+
   useEffect(() => {
     const fetchProperties = async () => {
       try {
-        // ⚡ Solo las primeras 50 propiedades más recientes ⚡
+        // Solo cargar propiedades DISPONIBLES
         const q = query(
           collection(db, 'properties'),
+          where('status', '==', 'disponible'),
           orderBy('createdAt', 'desc'),
-          limit(50)  // ← Límite para velocidad
+          limit(100)
         );
         const snapshot = await getDocs(q);
         const data = snapshot.docs.map(doc => ({
@@ -42,14 +42,15 @@ function ClientHome() {
         }));
         setProperties(data);
       } catch (err) {
-        // Si no hay índice de "createdAt", carga sin orden pero con límite
         try {
-          const q = query(collection(db, 'properties'), limit(50));
-          const snapshot = await getDocs(q);
-          const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          // Fallback sin índice
+          const snapshot = await getDocs(collection(db, 'properties'));
+          const data = snapshot.docs
+            .map(doc => ({ id: doc.id, ...doc.data() }))
+            .filter(p => p.status === 'disponible' || !p.status);
           setProperties(data);
         } catch (err2) {
-          setError('No se pudieron cargar las propiedades. Verifica la conexión con Firebase.');
+          setError('Error al cargar propiedades.');
           console.error(err2);
         }
       } finally {
@@ -59,10 +60,9 @@ function ClientHome() {
     fetchProperties();
   }, []);
 
-  // ── Filtrar propiedades en memoria (rápido, sin ir a Firebase) ──
+  // Filtrar
   const filtered = useMemo(() => {
     return properties.filter(p => {
-      // Filtro de texto libre
       if (filters.search) {
         const term = filters.search.toLowerCase();
         const matches =
@@ -72,33 +72,58 @@ function ClientHome() {
         if (!matches) return false;
       }
 
-      // Tipo de propiedad
       if (filters.type && p.type !== filters.type) return false;
-
-      // Precio mínimo
       if (filters.minPrice && p.price < Number(filters.minPrice)) return false;
-
-      // Precio máximo
       if (filters.maxPrice && p.price > Number(filters.maxPrice)) return false;
-
-      // Habitaciones
       if (filters.bedrooms && p.bedrooms !== Number(filters.bedrooms)) return false;
 
       return true;
     });
   }, [properties, filters]);
 
+  // Ordenar
+  const sorted = useMemo(() => {
+    const arr = [...filtered];
+    if (sortBy === 'price-asc') {
+      arr.sort((a, b) => a.price - b.price);
+    } else if (sortBy === 'price-desc') {
+      arr.sort((a, b) => b.price - a.price);
+    } else if (sortBy === 'recent') {
+      arr.sort((a, b) => {
+        const aTime = a.createdAt?.toMillis?.() || 0;
+        const bTime = b.createdAt?.toMillis?.() || 0;
+        return bTime - aTime;
+      });
+    }
+    return arr;
+  }, [filtered, sortBy]);
+
+  // Paginar
+  const totalPages = Math.ceil(sorted.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const paginatedProperties = sorted.slice(startIndex, endIndex);
+
   const handleFilter = (e) => {
     const { name, value } = e.target;
     setFilters(prev => ({ ...prev, [name]: value }));
+    setCurrentPage(1); // Volver a primera página al filtrar
   };
 
-  const clearFilters = () => setFilters(EMPTY_FILTERS);
+  const clearFilters = () => {
+    setFilters(EMPTY_FILTERS);
+    setCurrentPage(1);
+  };
+
+  const goToPage = (page) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   return (
     <div className="client-home">
 
-      {/* ────── HERO ────── */}
+      {/* HERO */}
       <section className="hero">
         <div className="hero__overlay" />
         <div className="hero__content">
@@ -111,7 +136,6 @@ function ClientHome() {
             Propiedades exclusivas cuidadosamente seleccionadas para ti.
           </p>
 
-          {/* Barra de búsqueda principal */}
           <div className="hero__search">
             <input
               type="text"
@@ -129,12 +153,11 @@ function ClientHome() {
         </div>
       </section>
 
-      {/* ────── FILTROS ────── */}
+      {/* FILTROS */}
       <section className="filters-bar">
         <div className="filters-bar__inner">
           <span className="filters-bar__label">Filtrar:</span>
 
-          {/* Tipo */}
           <select name="type" value={filters.type} onChange={handleFilter} className="filter-select">
             <option value="">Todos los tipos</option>
             <option value="Casa">Casa</option>
@@ -143,7 +166,6 @@ function ClientHome() {
             <option value="Comercial">Comercial</option>
           </select>
 
-          {/* Habitaciones */}
           <select name="bedrooms" value={filters.bedrooms} onChange={handleFilter} className="filter-select">
             <option value="">Habitaciones</option>
             <option value="1">1 hab.</option>
@@ -153,7 +175,6 @@ function ClientHome() {
             <option value="5">5+ hab.</option>
           </select>
 
-          {/* Precio mín */}
           <input
             type="number"
             name="minPrice"
@@ -164,7 +185,6 @@ function ClientHome() {
             min="0"
           />
 
-          {/* Precio máx */}
           <input
             type="number"
             name="maxPrice"
@@ -175,7 +195,13 @@ function ClientHome() {
             min="0"
           />
 
-          {/* Limpiar filtros */}
+          {/* ← ORDENAMIENTO */}
+          <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="filter-select">
+            <option value="recent">Más recientes</option>
+            <option value="price-asc">Precio: menor a mayor</option>
+            <option value="price-desc">Precio: mayor a menor</option>
+          </select>
+
           {Object.values(filters).some(Boolean) && (
             <button className="filter-clear" onClick={clearFilters}>
               ✕ Limpiar
@@ -184,18 +210,17 @@ function ClientHome() {
         </div>
       </section>
 
-      {/* ────── CATÁLOGO ────── */}
+      {/* CATÁLOGO */}
       <section className="catalog-section">
         <div className="catalog-section__header">
           <h2 className="catalog-section__title">
             {filters.search ? `Resultados para "${filters.search}"` : 'Propiedades disponibles'}
           </h2>
           <span className="catalog-section__count">
-            {loading ? '...' : `${filtered.length} propiedad${filtered.length !== 1 ? 'es' : ''}`}
+            {loading ? '...' : `${sorted.length} propiedad${sorted.length !== 1 ? 'es' : ''}`}
           </span>
         </div>
 
-        {/* Estado: cargando */}
         {loading && (
           <div className="loading-inline">
             <div className="spinner-sm" />
@@ -203,13 +228,11 @@ function ClientHome() {
           </div>
         )}
 
-        {/* Estado: error */}
         {!loading && error && (
           <div className="alert alert-error">{error}</div>
         )}
 
-        {/* Estado: sin resultados */}
-        {!loading && !error && filtered.length === 0 && (
+        {!loading && !error && sorted.length === 0 && (
           <div className="empty-state">
             <div className="empty-icon">
               <Search size={48} strokeWidth={1.5} />
@@ -217,8 +240,8 @@ function ClientHome() {
             <h3>Sin resultados</h3>
             <p>
               {properties.length === 0
-                ? 'Aún no hay propiedades en el catálogo.'
-                : 'Ninguna propiedad coincide con los filtros seleccionados.'}
+                ? 'Aún no hay propiedades disponibles.'
+                : 'Ninguna propiedad coincide con los filtros.'}
             </p>
             {Object.values(filters).some(Boolean) && (
               <button className="btn btn-outline" style={{ marginTop: '1.5rem' }} onClick={clearFilters}>
@@ -228,21 +251,57 @@ function ClientHome() {
           </div>
         )}
 
-        {/* Grid de propiedades */}
-        {!loading && !error && filtered.length > 0 && (
-          <div className="catalog-grid">
-            {filtered.map(property => (
-              <PropertyCard key={property.id} property={property} />
-            ))}
-          </div>
+        {!loading && !error && sorted.length > 0 && (
+          <>
+            <div className="catalog-grid">
+              {paginatedProperties.map(property => (
+                <PropertyCard key={property.id} property={property} />
+              ))}
+            </div>
+
+            {/* ← PAGINACIÓN */}
+            {totalPages > 1 && (
+              <div className="pagination">
+                <button
+                  className="pagination-btn"
+                  onClick={() => goToPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft size={18} />
+                  Anterior
+                </button>
+
+                <div className="pagination-pages">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                    <button
+                      key={page}
+                      className={`pagination-page ${page === currentPage ? 'active' : ''}`}
+                      onClick={() => goToPage(page)}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  className="pagination-btn"
+                  onClick={() => goToPage(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                >
+                  Siguiente
+                  <ChevronRight size={18} />
+                </button>
+              </div>
+            )}
+          </>
         )}
       </section>
 
-      {/* ────── FOOTER / CTA ────── */}
+      {/* CTA */}
       <section className="home-cta">
         <div className="home-cta__inner">
           <h2>¿No encuentras lo que buscas?</h2>
-          <p>Nuestro equipo de expertos te ayudará a encontrar la propiedad ideal.</p>
+          <p>Nuestro equipo te ayudará a encontrar la propiedad ideal.</p>
           <a href="mailto:info@inmobiliariapro.com" className="btn btn-gold btn-lg">
             Contactar a un asesor
           </a>

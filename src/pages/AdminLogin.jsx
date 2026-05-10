@@ -1,17 +1,11 @@
 // src/pages/AdminLogin.jsx
-// ─────────────────────────────────────────────────────────────────────
-//  Página de inicio de sesión para administradores.
-//  Usa Firebase Authentication con email y contraseña.
-// ─────────────────────────────────────────────────────────────────────
-// src/pages/AdminLogin.jsx
-// LOGIN UNIVERSAL - Detecta automáticamente si es admin o agente
-// src/pages/AdminLogin.jsx
+// ACTUALIZADO: Verifica que el agente esté activo antes de permitir acceso
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { auth, db } from '../firebase';
-import { LogIn, Mail, Lock } from 'lucide-react';
+import { LogIn, Mail, Lock, Eye, EyeOff, Loader2 } from 'lucide-react';
 import './AdminLogin.css';
 
 function AdminLogin() {
@@ -19,6 +13,7 @@ function AdminLogin() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const navigate = useNavigate();
 
@@ -28,7 +23,7 @@ function AdminLogin() {
     setLoading(true);
 
     try {
-      // 1. Autenticar en Firebase
+      // 1. Autenticar
       await signInWithEmailAndPassword(auth, email, password);
 
       // 2. Verificar si es agente
@@ -36,10 +31,22 @@ function AdminLogin() {
       const q = query(employeesRef, where('email', '==', email.toLowerCase().trim()));
       const snapshot = await getDocs(q);
 
-      // 3. Redirigir según el rol
       if (!snapshot.empty) {
+        // Es agente
+        const agentData = snapshot.docs[0].data();
+        
+        // ← VERIFICAR SI ESTÁ ACTIVO
+        if (agentData.status === 'inactivo') {
+          await auth.signOut(); // Cerrar sesión inmediatamente
+          setError('Tu cuenta ha sido desactivada. Contacta al administrador.');
+          setLoading(false);
+          return;
+        }
+
+        // Si está activo, redirigir
         navigate('/agent');
       } else {
+        // Es admin
         navigate('/admin');
       }
 
@@ -99,15 +106,30 @@ function AdminLogin() {
               <Lock size={14} />
               Contraseña
             </label>
-            <input
-              id="password"
-              type="password"
-              className="form-control"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
+
+            <div className="password-wrapper">
+              <input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                className="form-control password-input"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+
+              <button
+                type="button"
+                className="password-toggle"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? (
+                  <EyeOff size={18} />
+                ) : (
+                  <Eye size={18} />
+                )}
+              </button>
+            </div>
           </div>
 
           <button
@@ -116,7 +138,10 @@ function AdminLogin() {
             disabled={loading}
           >
             {loading ? (
-              <>⏳ Verificando...</>
+              <>
+                <Loader2 size={18} className="spin" />
+                Verificando...
+              </>
             ) : (
               <>
                 <LogIn size={16} />

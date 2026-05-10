@@ -1,13 +1,17 @@
 // src/pages/PropertyManagement.jsx
-// AHORA CON GALERÍA DE IMÁGENES (múltiples URLs)
+// ALTERNATIVA: Subida de imágenes con CLOUDINARY (gratis)
 import React, { useState, useEffect } from 'react';
 import {
   collection, getDocs, addDoc, updateDoc, deleteDoc,
   doc, serverTimestamp
 } from 'firebase/firestore';
 import { db } from '../firebase';
-import { Plus, Edit2, Trash2, Home, Image as ImageIcon, X } from 'lucide-react';
+import { Plus, Edit2, Trash2, Home, Image as ImageIcon, X, Upload, Loader } from 'lucide-react';
 import './PropertyManagement.css';
+
+// ← CONFIGURACIÓN DE CLOUDINARY
+const CLOUDINARY_UPLOAD_PRESET = 'inmobiliaria_uploads'; // Crear en Cloudinary
+const CLOUDINARY_CLOUD_NAME = 'dxglvzif1';
 
 const formatPrice = (price) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
@@ -18,14 +22,20 @@ const EMPTY_FORM = {
   location:    '',
   price:       '',
   type:        'Casa',
+  status:      'disponible',
   bedrooms:    '',
   bathrooms:   '',
   area:        '',
   garage:      '0',
   description: '',
-  images:      [''], // ← Ahora es array de URLs
   amenities:   '',
 };
+
+const STATUS_OPTIONS = [
+  { value: 'disponible', label: 'Disponible', color: '#27ae60' },
+  { value: 'reservada', label: 'Reservada', color: '#f39c12' },
+  { value: 'vendida', label: 'Vendida', color: '#e74c3c' },
+];
 
 function PropertyManagement() {
   const [properties,  setProperties]  = useState([]);
@@ -36,6 +46,10 @@ function PropertyManagement() {
   const [formErrors,  setFormErrors]  = useState({});
   const [saving,      setSaving]      = useState(false);
   const [deleteId,    setDeleteId]    = useState(null);
+  
+  const [imageFiles,  setImageFiles]  = useState([]);
+  const [imagePreviews, setImagePreviews] = useState([]);
+  const [uploading,   setUploading]   = useState(false);
 
   useEffect(() => { loadProperties(); }, []);
 
@@ -58,21 +72,73 @@ function PropertyManagement() {
     if (formErrors[name]) setFormErrors(prev => ({ ...prev, [name]: '' }));
   };
 
-  // Manejo de imágenes (array)
-  const handleImageChange = (index, value) => {
-    const newImages = [...formData.images];
-    newImages[index] = value;
-    setFormData(prev => ({ ...prev, images: newImages }));
+  const handleImageSelect = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    const validFiles = files.filter(f => {
+      if (f.size > 5 * 1024 * 1024) {
+        alert(`${f.name} es muy grande. Máximo 5MB.`);
+        return false;
+      }
+      return true;
+    });
+
+    setImageFiles(prev => [...prev, ...validFiles]);
+
+    validFiles.forEach(file => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreviews(prev => [...prev, reader.result]);
+      };
+      reader.readAsDataURL(file);
+    });
   };
 
-  const addImageField = () => {
-    setFormData(prev => ({ ...prev, images: [...prev.images, ''] }));
+  const removeImage = (index) => {
+    setImageFiles(prev => prev.filter((_, i) => i !== index));
+    setImagePreviews(prev => prev.filter((_, i) => i !== index));
   };
 
-  const removeImageField = (index) => {
-    if (formData.images.length === 1) return; // Siempre dejar al menos 1
-    const newImages = formData.images.filter((_, i) => i !== index);
-    setFormData(prev => ({ ...prev, images: newImages }));
+  // ← SUBIR A CLOUDINARY
+  const uploadToCloudinary = async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
+    const response = await fetch(
+      `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+      {
+        method: 'POST',
+        body: formData,
+      }
+    );
+
+    if (!response.ok) throw new Error('Error subiendo imagen');
+    
+    const data = await response.json();
+    return data.secure_url; // URL de la imagen
+  };
+
+  const uploadImages = async () => {
+    if (imageFiles.length === 0) return [];
+
+    setUploading(true);
+    const uploadedUrls = [];
+
+    try {
+      for (const file of imageFiles) {
+        const url = await uploadToCloudinary(file);
+        uploadedUrls.push(url);
+      }
+    } catch (err) {
+      console.error('Error subiendo imágenes:', err);
+      alert('Error al subir imágenes.');
+    } finally {
+      setUploading(false);
+    }
+
+    return uploadedUrls;
   };
 
   const validate = () => {
@@ -96,37 +162,35 @@ function PropertyManagement() {
     setFormData(EMPTY_FORM);
     setFormErrors({});
     setEditingId(null);
+    setImageFiles([]);
+    setImagePreviews([]);
     setShowForm(true);
     window.scrollTo({ top: 120, behavior: 'smooth' });
   };
 
   const openEdit = (property) => {
-    // Convertir imageUrl antigua a array si existe
-    let images = [''];
-    if (property.images && Array.isArray(property.images)) {
-      images = property.images.filter(Boolean);
-      if (images.length === 0) images = [''];
-    } else if (property.imageUrl) {
-      images = [property.imageUrl];
-    }
-
     setFormData({
       title:       property.title       || '',
       location:    property.location    || '',
       price:       property.price?.toString() || '',
       type:        property.type        || 'Casa',
+      status:      property.status      || 'disponible',
       bedrooms:    property.bedrooms?.toString() || '',
       bathrooms:   property.bathrooms?.toString() || '',
       area:        property.area?.toString() || '',
       garage:      property.garage?.toString() || '0',
       description: property.description || '',
-      images:      images,
       amenities:   Array.isArray(property.amenities)
                      ? property.amenities.join(', ')
                      : (property.amenities || ''),
     });
     setFormErrors({});
     setEditingId(property.id);
+    setImageFiles([]);
+    
+    const existingImages = property.images || (property.imageUrl ? [property.imageUrl] : []);
+    setImagePreviews(existingImages);
+    
     setShowForm(true);
     window.scrollTo({ top: 120, behavior: 'smooth' });
   };
@@ -135,6 +199,8 @@ function PropertyManagement() {
     setShowForm(false);
     setEditingId(null);
     setFormErrors({});
+    setImageFiles([]);
+    setImagePreviews([]);
   };
 
   const handleSave = async (e) => {
@@ -143,21 +209,27 @@ function PropertyManagement() {
 
     setSaving(true);
     try {
-      // Filtrar imágenes vacías
-      const validImages = formData.images.filter(img => img.trim());
+      const newImageUrls = await uploadImages();
+
+      let allImageUrls = [...newImageUrls];
+      if (editingId) {
+        const existingUrls = imagePreviews.filter(url => typeof url === 'string' && url.startsWith('http'));
+        allImageUrls = [...existingUrls, ...newImageUrls];
+      }
 
       const dataToSave = {
         title:       formData.title.trim(),
         location:    formData.location.trim(),
         price:       Number(formData.price),
         type:        formData.type,
+        status:      formData.status,
         bedrooms:    Number(formData.bedrooms) || 0,
         bathrooms:   Number(formData.bathrooms) || 0,
         area:        Number(formData.area),
         garage:      Number(formData.garage) || 0,
         description: formData.description.trim(),
-        images:      validImages, // ← Array de URLs
-        imageUrl:    validImages[0] || '', // Compatibilidad hacia atrás
+        images:      allImageUrls,
+        imageUrl:    allImageUrls[0] || '',
         amenities:   formData.amenities
                        ? formData.amenities.split(',').map(a => a.trim()).filter(Boolean)
                        : [],
@@ -179,7 +251,7 @@ function PropertyManagement() {
       await loadProperties();
     } catch (err) {
       console.error('Error guardando propiedad:', err);
-      alert('Error al guardar. Por favor intenta de nuevo.');
+      alert('Error al guardar.');
     } finally {
       setSaving(false);
     }
@@ -193,7 +265,20 @@ function PropertyManagement() {
       await loadProperties();
     } catch (err) {
       console.error('Error eliminando:', err);
-      alert('Error al eliminar la propiedad.');
+      alert('Error al eliminar.');
+    }
+  };
+
+  const changeStatus = async (propertyId, newStatus) => {
+    try {
+      await updateDoc(doc(db, 'properties', propertyId), {
+        status: newStatus,
+        updatedAt: serverTimestamp(),
+      });
+      await loadProperties();
+    } catch (err) {
+      console.error('Error cambiando estado:', err);
+      alert('Error al cambiar el estado.');
     }
   };
 
@@ -201,7 +286,6 @@ function PropertyManagement() {
     <div className="admin-page">
       <div className="admin-container">
 
-        {/* Header */}
         <div className="pm-header">
           <div>
             <h1 className="dash-title">Gestión de Propiedades</h1>
@@ -215,7 +299,6 @@ function PropertyManagement() {
           </button>
         </div>
 
-        {/* Formulario */}
         {showForm && (
           <div className="pm-form-card">
             <h2 className="pm-form-title">
@@ -229,7 +312,7 @@ function PropertyManagement() {
                   <label>Título *</label>
                   <input type="text" name="title" value={formData.title} onChange={handleInput}
                     className={`form-control ${formErrors.title ? 'form-control--error' : ''}`}
-                    placeholder="Ej: Hermosa casa con jardín en Santa Ana"
+                    placeholder="Ej: Hermosa casa en Santa Ana"
                   />
                   {formErrors.title && <span className="field-error">{formErrors.title}</span>}
                 </div>
@@ -296,66 +379,51 @@ function PropertyManagement() {
                   />
                 </div>
 
-                {/* GALERÍA DE IMÁGENES */}
                 <div className="form-group pm-col-2">
                   <label>
                     <ImageIcon size={14} style={{ display: 'inline', marginRight: '4px' }} />
-                    Galería de imágenes (URLs)
+                    Imágenes (Cloudinary - Gratis)
                   </label>
-                  {formData.images.map((img, index) => (
-                    <div key={index} className="image-input-row">
-                      <input
-                        type="url"
-                        value={img}
-                        onChange={(e) => handleImageChange(index, e.target.value)}
-                        className="form-control"
-                        placeholder={`https://images.unsplash.com/... (Imagen ${index + 1})`}
-                      />
-                      {formData.images.length > 1 && (
-                        <button
-                          type="button"
-                          className="btn btn-sm btn-danger"
-                          onClick={() => removeImageField(index)}
-                          style={{ flexShrink: 0 }}
-                        >
-                          <X size={14} />
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-outline"
-                    onClick={addImageField}
-                    style={{ marginTop: '.5rem' }}
-                  >
-                    <Plus size={14} />
-                    Agregar otra imagen
-                  </button>
-                  <small className="field-hint">
-                    Puedes usar imágenes de Unsplash: https://unsplash.com
-                  </small>
-                  {/* Preview de imágenes */}
-                  {formData.images.some(img => img.trim()) && (
+                  
+                  <div className="image-upload-zone">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleImageSelect}
+                      className="file-input"
+                      id="image-upload"
+                    />
+                    <label htmlFor="image-upload" className="file-upload-btn">
+                      <Upload size={18} />
+                      Seleccionar imágenes
+                    </label>
+                    <small className="field-hint">Máximo 5MB por imagen</small>
+                  </div>
+
+                  {imagePreviews.length > 0 && (
                     <div className="images-preview">
-                      {formData.images.filter(img => img.trim()).map((img, i) => (
-                        <img
-                          key={i}
-                          src={img}
-                          alt={`Preview ${i + 1}`}
-                          className="image-preview-small"
-                          onError={(e) => { e.target.style.display = 'none'; }}
-                        />
+                      {imagePreviews.map((preview, i) => (
+                        <div key={i} className="image-preview-item">
+                          <img src={preview} alt={`Preview ${i + 1}`} className="image-preview-small" />
+                          <button
+                            type="button"
+                            className="image-remove-btn"
+                            onClick={() => removeImage(i)}
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
                       ))}
                     </div>
                   )}
                 </div>
 
                 <div className="form-group pm-col-2">
-                  <label>Amenidades (separadas por comas)</label>
+                  <label>Amenidades</label>
                   <input type="text" name="amenities" value={formData.amenities} onChange={handleInput}
                     className="form-control"
-                    placeholder="Piscina, Jardín, Seguridad 24h, Cuarto de servicio"
+                    placeholder="Piscina, Jardín, Seguridad 24h"
                   />
                 </div>
 
@@ -364,7 +432,7 @@ function PropertyManagement() {
                   <textarea name="description" value={formData.description} onChange={handleInput}
                     className={`form-control ${formErrors.description ? 'form-control--error' : ''}`}
                     rows={4}
-                    placeholder="Describe la propiedad de forma atractiva y detallada..."
+                    placeholder="Describe la propiedad..."
                   />
                   {formErrors.description && <span className="field-error">{formErrors.description}</span>}
                 </div>
@@ -374,19 +442,25 @@ function PropertyManagement() {
                 <button type="button" className="btn btn-outline" onClick={cancelForm}>
                   Cancelar
                 </button>
-                <button type="submit" className="btn btn-gold" disabled={saving}>
-                  {saving ? '⏳ Guardando...' : (editingId ? '✓ Actualizar' : '✓ Crear propiedad')}
+                <button type="submit" className="btn btn-gold" disabled={saving || uploading}>
+                  {saving || uploading ? (
+                    <>
+                      <Loader size={16} className="spinner-icon" />
+                      {uploading ? 'Subiendo...' : 'Guardando...'}
+                    </>
+                  ) : (
+                    editingId ? '✓ Actualizar' : '✓ Crear'
+                  )}
                 </button>
               </div>
             </form>
           </div>
         )}
 
-        {/* Tabla */}
         {loading ? (
           <div className="loading-inline">
             <div className="spinner-sm" />
-            <span>Cargando propiedades...</span>
+            <span>Cargando...</span>
           </div>
         ) : properties.length === 0 ? (
           <div className="empty-state">
@@ -394,7 +468,7 @@ function PropertyManagement() {
               <Home size={48} strokeWidth={1.5} />
             </div>
             <h3>Sin propiedades</h3>
-            <p>Agrega tu primera propiedad con el botón de arriba.</p>
+            <p>Agrega tu primera propiedad.</p>
           </div>
         ) : (
           <div className="pm-table-wrap">
@@ -404,6 +478,7 @@ function PropertyManagement() {
                   <th>Imagen</th>
                   <th>Propiedad</th>
                   <th>Tipo</th>
+                  <th>Estado</th>
                   <th>Precio</th>
                   <th>Características</th>
                   <th>Acciones</th>
@@ -417,9 +492,7 @@ function PropertyManagement() {
                       <td>
                         <div className="table-thumbnail">
                           {firstImage ? (
-                            <img src={firstImage} alt={p.title}
-                              onError={(e) => { e.target.src = ''; e.target.style.display = 'none'; }}
-                            />
+                            <img src={firstImage} alt={p.title} loading="lazy" />
                           ) : (
                             <span className="thumb-placeholder">
                               <Home size={20} />
@@ -439,6 +512,18 @@ function PropertyManagement() {
                         <span className="type-chip">{p.type}</span>
                       </td>
 
+                      <td>
+                        <select
+                          value={p.status || 'disponible'}
+                          onChange={(e) => changeStatus(p.id, e.target.value)}
+                          className="status-select"
+                        >
+                          {STATUS_OPTIONS.map(opt => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                          ))}
+                        </select>
+                      </td>
+
                       <td className="price-cell">{formatPrice(p.price)}</td>
 
                       <td>
@@ -454,18 +539,14 @@ function PropertyManagement() {
                           <button
                             className="btn btn-sm btn-dark"
                             onClick={() => openEdit(p)}
-                            title="Editar"
                           >
                             <Edit2 size={14} />
-                            Editar
                           </button>
                           <button
                             className="btn btn-sm btn-danger"
                             onClick={() => setDeleteId(p.id)}
-                            title="Eliminar"
                           >
                             <Trash2 size={14} />
-                            Eliminar
                           </button>
                         </div>
                       </td>
@@ -477,13 +558,12 @@ function PropertyManagement() {
           </div>
         )}
 
-        {/* Modal */}
         {deleteId && (
           <div className="modal-overlay" onClick={() => setDeleteId(null)}>
             <div className="modal" onClick={(e) => e.stopPropagation()}>
               <div className="modal__icon">⚠️</div>
               <h3>¿Eliminar propiedad?</h3>
-              <p>Esta acción es permanente y no se puede deshacer.</p>
+              <p>Esta acción es permanente.</p>
               <div className="modal__actions">
                 <button className="btn btn-outline" onClick={() => setDeleteId(null)}>
                   Cancelar

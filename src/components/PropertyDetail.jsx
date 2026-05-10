@@ -14,8 +14,6 @@ const EMPTY_FORM = {
   name:    '',
   email:   '',
   phone:   '',
-  date:    '',
-  time:    '',
   message: '',
 };
 
@@ -66,13 +64,6 @@ function PropertyDetail() {
     if (!formData.email.trim()) errs.email = 'El email es requerido.';
     else if (!/\S+@\S+\.\S+/.test(formData.email)) errs.email = 'Email no válido.';
     if (!formData.phone.trim()) errs.phone = 'El teléfono es requerido.';
-    if (!formData.date)         errs.date  = 'Selecciona una fecha.';
-    if (!formData.time)         errs.time  = 'Selecciona una hora.';
-
-    if (formData.date) {
-      const today = new Date().toISOString().split('T')[0];
-      if (formData.date < today) errs.date = 'La fecha no puede ser en el pasado.';
-    }
 
     setFormErrors(errs);
     return Object.keys(errs).length === 0;
@@ -85,13 +76,15 @@ function PropertyDetail() {
     setSubmitting(true);
     try {
       await addDoc(collection(db, 'bookings'), {
-        ...formData,
         name:          formData.name.trim(),
         email:         formData.email.trim().toLowerCase(),
         phone:         formData.phone.trim(),
+        message:       formData.message.trim(),
         propertyId:    id,
         propertyTitle: property.title,
         propertyImage: property.imageUrl || (Array.isArray(property.images) ? property.images[0] : ''),
+        date:          null,
+        time:          null,
         status:        'pendiente',
         createdAt:     serverTimestamp(),
       });
@@ -133,7 +126,6 @@ function PropertyDetail() {
     );
   }
 
-  const today = new Date().toISOString().split('T')[0];
   const firstImage = Array.isArray(property.images) ? property.images[0] : (property.imageUrl || '');
 
   return (
@@ -313,43 +305,6 @@ function PropertyDetail() {
                         placeholder="+506 8888 8888"
                       />
                       {formErrors.phone && <span className="field-error">{formErrors.phone}</span>}
-                    </div>
-
-                    <div className="form-row">
-                      <div className="form-group">
-                        <label htmlFor="date">Fecha preferida *</label>
-                        <input
-                          id="date"
-                          type="date"
-                          name="date"
-                          value={formData.date}
-                          onChange={handleInput}
-                          min={today}
-                          className={`form-control ${formErrors.date ? 'form-control--error' : ''}`}
-                        />
-                        {formErrors.date && <span className="field-error">{formErrors.date}</span>}
-                      </div>
-
-                      <div className="form-group">
-                        <label htmlFor="time">Hora preferida *</label>
-                        <select
-                          id="time"
-                          name="time"
-                          value={formData.time}
-                          onChange={handleInput}
-                          className={`form-control ${formErrors.time ? 'form-control--error' : ''}`}
-                        >
-                          <option value="">Seleccionar</option>
-                          <option value="09:00">9:00 AM</option>
-                          <option value="10:00">10:00 AM</option>
-                          <option value="11:00">11:00 AM</option>
-                          <option value="14:00">2:00 PM</option>
-                          <option value="15:00">3:00 PM</option>
-                          <option value="16:00">4:00 PM</option>
-                          <option value="17:00">5:00 PM</option>
-                        </select>
-                        {formErrors.time && <span className="field-error">{formErrors.time}</span>}
-                      </div>
                     </div>
 
                     <div className="form-group">
