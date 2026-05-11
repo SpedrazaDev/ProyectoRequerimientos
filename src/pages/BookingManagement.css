@@ -85,3 +85,22 @@
   .bm-card__meta { align-items: flex-start; }
   .bm-card__info { grid-template-columns: 1fr; }
 }
+
+/* Modal assign — force dark text regardless of global dark-page CSS bleed */
+.modal-assign { max-width: 460px; text-align: left; }
+.modal-assign .form-group label {
+  display: block; margin-bottom: .5rem; font-weight: 600;
+  color: var(--gray-600) !important;
+}
+.modal-assign .form-group input,
+.modal-assign .form-group select {
+  width: 100%;
+  color: var(--dark-2) !important;
+  background: var(--white) !important;
+  border: 1.5px solid var(--gray-200) !important;
+  border-radius: var(--radius);
+  padding: .78rem 1rem;
+  font-size: .92rem;
+}
+.modal-assign .form-group input::placeholder { color: var(--gray-400) !important; }
+.modal-assign .form-group input[type="date"]::-webkit-calendar-picker-indicator { filter: none; cursor: pointer; }

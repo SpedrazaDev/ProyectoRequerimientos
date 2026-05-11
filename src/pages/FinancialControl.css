@@ -1,0 +1,353 @@
+/* src/pages/FinancialControl.css */
+
+.fc-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+/* ── Métricas ── */
+.fc-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 2rem;
+}
+
+.fc-metric {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  background: white;
+  border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  border-left: 4px solid transparent;
+}
+
+.fc-metric--green  { border-left-color: #27ae60; }
+.fc-metric--blue   { border-left-color: #3498db; }
+.fc-metric--gold   { border-left-color: #c9a84c; }
+.fc-metric--purple { border-left-color: #9b59b6; }
+.fc-metric--orange { border-left-color: #e67e22; }
+.fc-metric--red    { border-left-color: #e74c3c; }
+
+.fc-metric-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: var(--gray-100);
+  color: var(--dark-2);
+}
+
+.fc-metric--green  .fc-metric-icon { background: #e8f5e9; color: #27ae60; }
+.fc-metric--blue   .fc-metric-icon { background: #e3f2fd; color: #3498db; }
+.fc-metric--gold   .fc-metric-icon { background: #fff8e1; color: #c9a84c; }
+.fc-metric--purple .fc-metric-icon { background: #f3e5f5; color: #9b59b6; }
+.fc-metric--orange .fc-metric-icon { background: #fff3e0; color: #e67e22; }
+.fc-metric--red    .fc-metric-icon { background: #ffebee; color: #e74c3c; }
+
+.fc-metric-label {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.2rem;
+}
+
+.fc-metric-value {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--dark-2);
+}
+
+/* ── Gráfico mensual ── */
+.fc-chart-card {
+  background: white;
+  border-radius: 14px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  margin-bottom: 2rem;
+}
+
+.fc-section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--dark-2);
+  margin: 0 0 1.25rem;
+}
+
+/* ── Filtros ── */
+.fc-filters {
+  background: white;
+  border-radius: 14px;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  margin-bottom: 2rem;
+}
+
+.fc-filters-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 1rem;
+}
+
+.fc-filters-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-end;
+}
+
+.fc-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 150px;
+}
+
+.fc-filter-group label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #666;
+}
+
+.fc-filter-group input,
+.fc-filter-group select {
+  padding: 0.55rem 0.75rem;
+  border: 1.5px solid var(--gray-200);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: var(--dark-2);
+  background: var(--gray-100);
+}
+
+.fc-filter-group input:focus,
+.fc-filter-group select:focus {
+  outline: none;
+  border-color: var(--gold);
+  background: white;
+}
+
+.btn-clear-filters {
+  padding: 0.55rem 1rem;
+  background: transparent;
+  border: 1.5px solid var(--gray-200);
+  border-radius: 8px;
+  font-size: 0.88rem;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s;
+  align-self: flex-end;
+}
+
+.btn-clear-filters:hover {
+  border-color: #e74c3c;
+  color: #e74c3c;
+}
+
+/* ── Tabla ── */
+.fc-table-card {
+  background: white;
+  border-radius: 14px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.fc-table-wrap { overflow-x: auto; }
+
+.fc-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.fc-table thead {
+  background: var(--dark-2);
+}
+
+.fc-table th {
+  padding: 0.85rem 1rem;
+  text-align: left;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.fc-table td {
+  padding: 0.85rem 1rem;
+  color: #333;
+  font-size: 0.9rem;
+  border-bottom: 1px solid #f0f0f5;
+  vertical-align: top;
+}
+
+.fc-table tbody tr:hover { background: #fafafa; }
+.fc-table tbody tr.row-manual { background: #fffbf0; }
+
+.fc-client-cell strong { display: block; font-size: 0.9rem; }
+.fc-client-cell small  { display: block; font-size: 0.8rem; color: #888; }
+
+.fc-amount { font-weight: 700; color: #27ae60; white-space: nowrap; }
+
+.fc-status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.fc-tag {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: var(--gray-200);
+  color: #666;
+  margin-top: 0.2rem;
+}
+
+.fc-tag--manual { background: #fff8e1; color: #c9a84c; }
+.fc-tag--auto   { background: #e3f2fd; color: #3498db; }
+
+.fc-table tfoot td {
+  padding: 0.85rem 1rem;
+  border-top: 2px solid var(--dark-2);
+  font-weight: 700;
+}
+
+.fc-total-label { color: #666; font-size: 0.9rem; }
+.fc-total-value { color: #27ae60; font-size: 1.05rem; }
+
+.fc-empty {
+  text-align: center;
+  padding: 3rem;
+  color: #999;
+}
+
+/* ── Modal ── */
+.fc-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.fc-modal {
+  background: white;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 640px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+}
+
+.fc-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.fc-modal-header h3 {
+  font-size: 1.2rem;
+  color: var(--dark-2);
+  margin: 0;
+}
+
+.fc-modal-header button {
+  background: transparent;
+  border: none;
+  color: #999;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.fc-modal-header button:hover { color: #333; }
+
+.fc-modal-form { padding: 1.5rem; }
+
+.fc-modal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.fc-mf-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.fc-mf-group.fc-mf-full { grid-column: 1 / -1; }
+
+.fc-mf-group label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #666;
+}
+
+.fc-mf-group input,
+.fc-mf-group select,
+.fc-mf-group textarea {
+  padding: 0.6rem 0.75rem;
+  border: 1.5px solid var(--gray-200);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: var(--dark-2);
+  background: var(--gray-100);
+  transition: border-color 0.2s;
+}
+
+.fc-mf-group input:focus,
+.fc-mf-group select:focus,
+.fc-mf-group textarea:focus {
+  outline: none;
+  border-color: var(--gold);
+  background: white;
+}
+
+.fc-mf-group textarea { resize: vertical; font-family: inherit; }
+
+.fc-modal-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+@media (max-width: 768px) {
+  .fc-metrics       { grid-template-columns: repeat(2, 1fr); }
+  .fc-table         { min-width: 900px; }
+  .fc-modal-grid    { grid-template-columns: 1fr; }
+  .fc-filters-row   { flex-direction: column; }
+}

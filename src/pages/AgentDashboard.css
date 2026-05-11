@@ -354,6 +354,265 @@
   color: #666;
 }
 
+/* ── Pipeline CRM ── */
+.pipeline-section {
+  background: white;
+  border-radius: 16px;
+  padding: 1.75rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  margin-bottom: 2rem;
+}
+
+.pipeline-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #f0f0f0;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.pipeline-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.pipeline-header-left h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0;
+}
+
+.pipeline-badge {
+  background: #e3f2fd;
+  color: #1565c0;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.pipeline-crm-link {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #c9a84c;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.pipeline-crm-link:hover { color: #a07830; }
+
+.pipeline-empty {
+  text-align: center;
+  padding: 2.5rem 1rem;
+  color: #aaa;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.pipeline-empty p { font-size: 0.95rem; margin: 0; color: #999; }
+
+.pipeline-columns {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.pipeline-col {
+  background: #fafafa;
+  border-radius: 12px;
+  border: 1px solid #e8e8e8;
+  overflow: hidden;
+}
+
+.pipeline-col-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-bottom: 2px solid;
+  background: white;
+}
+
+.pipeline-col-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.pipeline-col-count {
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.pipeline-col-empty {
+  padding: 1.5rem;
+  text-align: center;
+  color: #bbb;
+  font-size: 0.88rem;
+}
+
+.pipeline-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.75rem;
+}
+
+.pipeline-card {
+  background: white;
+  border-radius: 10px;
+  border: 1.5px solid #e8e8e8;
+  padding: 0.9rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.pipeline-card:hover {
+  border-color: #c9a84c;
+  box-shadow: 0 3px 10px rgba(201,168,76,0.12);
+}
+
+.pipeline-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.5rem;
+}
+
+.pipeline-client-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.pipeline-client-email {
+  font-size: 0.78rem;
+  color: #888;
+  margin-top: 0.1rem;
+}
+
+.pipeline-prob {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 2.5px solid;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.pipeline-property {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+  color: #666;
+  margin-bottom: 0.3rem;
+}
+
+.pipeline-value {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #27ae60;
+  margin-bottom: 0.6rem;
+}
+
+.pipeline-card-actions {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-top: 0.6rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid #f0f0f0;
+}
+
+.pipeline-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pipeline-btn--advance {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.pipeline-btn--advance:hover:not(:disabled) {
+  background: #1565c0;
+  color: white;
+}
+
+.pipeline-btn--advance:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pipeline-btn--sale {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.pipeline-btn--sale:hover {
+  background: #2e7d32;
+  color: white;
+}
+
+.pipeline-closed-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.pipeline-more {
+  display: block;
+  text-align: center;
+  padding: 0.5rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #c9a84c;
+  text-decoration: none;
+  border-radius: 8px;
+  background: #fffbf0;
+  border: 1px dashed #c9a84c;
+  transition: background 0.2s;
+}
+
+.pipeline-more:hover { background: #fff3d0; }
+
+@media (max-width: 900px) {
+  .pipeline-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Loading */
 .loading-container {
   display: flex;

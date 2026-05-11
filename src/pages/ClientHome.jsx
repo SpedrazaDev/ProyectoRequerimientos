@@ -1,18 +1,21 @@
 // src/pages/ClientHome.jsx
 // ACTUALIZADO: Con paginación (10 propiedades por página) y ordenamiento
 import React, { useState, useEffect, useMemo } from 'react';
-import { collection, getDocs, query, orderBy, limit, where } from 'firebase/firestore';
+import { collection, getDocs, onSnapshot, query, orderBy, where } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import PropertyCard from '../components/PropertyCard';
 import './ClientHome.css';
 
 const EMPTY_FILTERS = {
-  type:     '',
-  minPrice: '',
-  maxPrice: '',
-  bedrooms: '',
-  search:   '',
+  type:      '',
+  minPrice:  '',
+  maxPrice:  '',
+  bedrooms:  '',
+  bathrooms: '',
+  minArea:   '',
+  maxArea:   '',
+  search:    '',
 };
 
 const ITEMS_PER_PAGE = 10; // ← PAGINACIÓN
@@ -26,38 +29,34 @@ function ClientHome() {
   const [sortBy, setSortBy] = useState('recent'); // ← ORDENAMIENTO
 
   useEffect(() => {
-    const fetchProperties = async () => {
+    const q = query(
+      collection(db, 'properties'),
+      where('status', '==', 'disponible'),
+      orderBy('createdAt', 'desc')
+    );
+
+    const unsub = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setProperties(data);
+      setError('');
+      setLoading(false);
+    }, async () => {
+      // Fallback when composite index is not available
       try {
-        // Solo cargar propiedades DISPONIBLES
-        const q = query(
-          collection(db, 'properties'),
-          where('status', '==', 'disponible'),
-          orderBy('createdAt', 'desc'),
-          limit(100)
-        );
-        const snapshot = await getDocs(q);
-        const data = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
+        const snapshot = await getDocs(collection(db, 'properties'));
+        const data = snapshot.docs
+          .map(doc => ({ id: doc.id, ...doc.data() }))
+          .filter(p => p.status === 'disponible' || !p.status);
         setProperties(data);
-      } catch (err) {
-        try {
-          // Fallback sin índice
-          const snapshot = await getDocs(collection(db, 'properties'));
-          const data = snapshot.docs
-            .map(doc => ({ id: doc.id, ...doc.data() }))
-            .filter(p => p.status === 'disponible' || !p.status);
-          setProperties(data);
-        } catch (err2) {
-          setError('Error al cargar propiedades.');
-          console.error(err2);
-        }
+      } catch (err2) {
+        setError('Error al cargar propiedades.');
+        console.error(err2);
       } finally {
         setLoading(false);
       }
-    };
-    fetchProperties();
+    });
+
+    return () => unsub();
   }, []);
 
   // Filtrar
@@ -72,10 +71,13 @@ function ClientHome() {
         if (!matches) return false;
       }
 
-      if (filters.type && p.type !== filters.type) return false;
-      if (filters.minPrice && p.price < Number(filters.minPrice)) return false;
-      if (filters.maxPrice && p.price > Number(filters.maxPrice)) return false;
-      if (filters.bedrooms && p.bedrooms !== Number(filters.bedrooms)) return false;
+      if (filters.type      && p.type      !== filters.type)              return false;
+      if (filters.minPrice  && p.price     <  Number(filters.minPrice))   return false;
+      if (filters.maxPrice  && p.price     >  Number(filters.maxPrice))   return false;
+      if (filters.bedrooms  && p.bedrooms  !== Number(filters.bedrooms))  return false;
+      if (filters.bathrooms && p.bathrooms !== Number(filters.bathrooms)) return false;
+      if (filters.minArea   && p.area      <  Number(filters.minArea))    return false;
+      if (filters.maxArea   && p.area      >  Number(filters.maxArea))    return false;
 
       return true;
     });
@@ -175,6 +177,14 @@ function ClientHome() {
             <option value="5">5+ hab.</option>
           </select>
 
+          <select name="bathrooms" value={filters.bathrooms} onChange={handleFilter} className="filter-select">
+            <option value="">Baños</option>
+            <option value="1">1 baño</option>
+            <option value="2">2 baños</option>
+            <option value="3">3 baños</option>
+            <option value="4">4+ baños</option>
+          </select>
+
           <input
             type="number"
             name="minPrice"
@@ -190,6 +200,26 @@ function ClientHome() {
             name="maxPrice"
             placeholder="Precio máx. ($)"
             value={filters.maxPrice}
+            onChange={handleFilter}
+            className="filter-input"
+            min="0"
+          />
+
+          <input
+            type="number"
+            name="minArea"
+            placeholder="Área mín. (m²)"
+            value={filters.minArea}
+            onChange={handleFilter}
+            className="filter-input"
+            min="0"
+          />
+
+          <input
+            type="number"
+            name="maxArea"
+            placeholder="Área máx. (m²)"
+            value={filters.maxArea}
             onChange={handleFilter}
             className="filter-input"
             min="0"

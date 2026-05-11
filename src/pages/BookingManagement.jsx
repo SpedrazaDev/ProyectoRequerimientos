@@ -39,7 +39,7 @@ function BookingManagement() {
   
   // Estados para asignación
   const [assigningId, setAssigningId] = useState(null);
-  const [assignForm,  setAssignForm]  = useState({ date: '', time: '' });
+  const [assignForm,  setAssignForm]  = useState({ date: '', time: '', agentEmail: '' });
 
   // ← NUEVO: Estados para reasignación
   const [reassigningId, setReassigningId] = useState(null);
@@ -62,27 +62,21 @@ function BookingManagement() {
 
   useEffect(() => { loadData(); }, []);
 
-  // ← NUEVO: Cargar rol del usuario actual
   useEffect(() => {
-    const loadUserRole = async () => {
+    const detectRole = async () => {
       const user = auth.currentUser;
       if (!user) return;
-
       try {
-        const employeesSnap = await getDocs(
+        const snap = await getDocs(
           query(collection(db, 'employees'), where('email', '==', user.email.toLowerCase()))
         );
-        
-        if (!employeesSnap.empty) {
-          const userData = employeesSnap.docs[0].data();
-          setUserRole(userData.role || 'agente');
-        }
-      } catch (err) {
-        console.error('Error cargando rol:', err);
+        // Not in employees (or inactive) → admin
+        setUserRole(!snap.empty && snap.docs[0].data().status === 'activo' ? 'agente' : 'admin');
+      } catch {
+        setUserRole('admin');
       }
     };
-
-    loadUserRole();
+    detectRole();
   }, []);
 
   const loadData = async () => {
@@ -134,14 +128,15 @@ function BookingManagement() {
   const openAssignModal = (booking) => {
     setAssigningId(booking.id);
     setAssignForm({
-      date: booking.date || '',
-      time: booking.time || '',
+      date:       booking.date       || '',
+      time:       booking.time       || '',
+      agentEmail: booking.assignedTo || '',
     });
   };
 
   const closeAssignModal = () => {
     setAssigningId(null);
-    setAssignForm({ date: '', time: '' });
+    setAssignForm({ date: '', time: '', agentEmail: '' });
   };
 
   const handleAssign = async (e) => {
@@ -154,21 +149,27 @@ function BookingManagement() {
 
     setUpdating(assigningId);
     try {
-      // ← NUEVO: Obtener email del usuario actual
       const currentUser = auth.currentUser;
-      const userEmail = currentUser?.email?.toLowerCase() || '';
+      const currentEmail = currentUser?.email?.toLowerCase() || '';
+
+      // Admin puede asignar a cualquier agente; agente se asigna a sí mismo
+      const targetEmail = (userRole === 'admin' && assignForm.agentEmail)
+        ? assignForm.agentEmail
+        : currentEmail;
+      const targetName  = agents.find(a => a.email === targetEmail)?.name || '';
 
       await updateDoc(doc(db, 'bookings', assigningId), {
-        date: assignForm.date,
-        time: assignForm.time,
-        status: 'confirmada',
-        assignedTo: userEmail, // ← NUEVO: Guardar quién asignó
-        updatedAt: serverTimestamp(),
+        date:           assignForm.date,
+        time:           assignForm.time,
+        status:         'confirmada',
+        assignedTo:     targetEmail,
+        assignedToName: targetName,
+        updatedAt:      serverTimestamp(),
       });
 
       setBookings(prev =>
-        prev.map(b => b.id === assigningId 
-          ? { ...b, date: assignForm.date, time: assignForm.time, status: 'confirmada', assignedTo: userEmail }
+        prev.map(b => b.id === assigningId
+          ? { ...b, date: assignForm.date, time: assignForm.time, status: 'confirmada', assignedTo: targetEmail, assignedToName: targetName }
           : b
         )
       );
@@ -185,10 +186,10 @@ function BookingManagement() {
         navigate(salesPath, {
           state: {
             fromBooking: {
-              bookingId: assigningId,
+              bookingId:  assigningId,
               propertyId: confirmedBooking?.propertyId || '',
-              clientEmail: confirmedBooking?.email || '',
-              assignedTo: userEmail,
+              clientEmail:confirmedBooking?.email || '',
+              assignedTo: targetEmail,
             }
           }
         });
@@ -550,11 +551,27 @@ function BookingManagement() {
 
               <form onSubmit={handleAssign}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  
+
+                  {/* Selector de agente — solo visible para admin */}
+                  {userRole === 'admin' && agents.length > 0 && (
+                    <div className="form-group">
+                      <label htmlFor="assign-agent">Agente asignado</label>
+                      <select
+                        id="assign-agent"
+                        value={assignForm.agentEmail}
+                        onChange={(e) => setAssignForm(prev => ({ ...prev, agentEmail: e.target.value }))}
+                        className="form-control"
+                      >
+                        <option value="">— Sin asignar —</option>
+                        {agents.map(agent => (
+                          <option key={agent.id} value={agent.email}>{agent.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
                   <div className="form-group">
-                    <label htmlFor="assign-date" style={{ display: 'block', marginBottom: '.5rem', fontWeight: 600 }}>
-                      Fecha de la visita *
-                    </label>
+                    <label htmlFor="assign-date">Fecha de la visita *</label>
                     <input
                       type="date"
                       id="assign-date"
@@ -563,21 +580,17 @@ function BookingManagement() {
                       className="form-control"
                       required
                       min={new Date().toISOString().split('T')[0]}
-                      style={{ width: '100%' }}
                     />
                   </div>
 
                   <div className="form-group">
-                    <label htmlFor="assign-time" style={{ display: 'block', marginBottom: '.5rem', fontWeight: 600 }}>
-                      Hora de la visita *
-                    </label>
+                    <label htmlFor="assign-time">Hora de la visita *</label>
                     <select
                       id="assign-time"
                       value={assignForm.time}
                       onChange={(e) => setAssignForm(prev => ({ ...prev, time: e.target.value }))}
                       className="form-control"
                       required
-                      style={{ width: '100%' }}
                     >
                       <option value="">Seleccionar hora</option>
                       <option value="08:00 AM">08:00 AM</option>

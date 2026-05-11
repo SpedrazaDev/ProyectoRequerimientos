@@ -80,8 +80,9 @@ function AdminCalendar() {
   const formatDate = (dateStr) => {
     if (!dateStr) return '';
     try {
-      const d = new Date(dateStr);
-      return d.toLocaleDateString('es-CR', {
+      const [y, m, d] = dateStr.split('-').map(Number);
+      const date = new Date(y, m - 1, d); // local date — avoids UTC midnight shift
+      return date.toLocaleDateString('es-CR', {
         weekday: 'long',
         day: 'numeric',
         month: 'long',

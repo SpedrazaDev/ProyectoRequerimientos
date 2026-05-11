@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from './firebase';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { auth, db } from './firebase';
 
 // Components
 import Navbar from './components/Navbar';
@@ -34,19 +35,43 @@ import AgentBlockedDates from './pages/AgentBlockedDates';
 // Pages - CRM
 import CRM from './pages/CRM';
 
+// Pages - Financial
+import FinancialControl from './pages/FinancialControl';
+import OpportunitiesReport from './pages/OpportunitiesReport';
+
 import './App.css';
 
 function ProtectedRoute({ children, user }) {
   return user ? children : <Navigate to="/admin/login" replace />;
 }
 
+function AdminRoute({ children, user, userRole }) {
+  if (!user) return <Navigate to="/admin/login" replace />;
+  if (userRole === 'agent') return <Navigate to="/agent" replace />;
+  return children;
+}
+
 function App() {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser]         = useState(null);
+  const [userRole, setUserRole] = useState(null); // 'admin' | 'agent' | null
+  const [loading, setLoading]   = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
+      if (currentUser) {
+        try {
+          const snap = await getDocs(
+            query(collection(db, 'employees'), where('email', '==', currentUser.email.toLowerCase()))
+          );
+          const isAgent = !snap.empty && snap.docs[0].data().status === 'activo';
+          setUserRole(isAgent ? 'agent' : 'admin');
+        } catch {
+          setUserRole('admin');
+        }
+      } else {
+        setUserRole(null);
+      }
       setLoading(false);
     });
     return () => unsubscribe();
@@ -82,51 +107,53 @@ function App() {
 
           {/* LOGIN UNIVERSAL */}
           <Route path="/admin/login" element={
-            user ? <Navigate to="/admin" replace /> : <AdminLogin />
+            !user ? <AdminLogin /> :
+            userRole === 'agent' ? <Navigate to="/agent" replace /> :
+            <Navigate to="/admin" replace />
           } />
 
           {/* RUTAS DE ADMIN */}
           <Route path="/admin" element={
-            <ProtectedRoute user={user}>
+            <AdminRoute user={user} userRole={userRole}>
               <AdminDashboard />
-            </ProtectedRoute>
+            </AdminRoute>
           } />
 
           <Route path="/admin/properties" element={
-            <ProtectedRoute user={user}>
+            <AdminRoute user={user} userRole={userRole}>
               <PropertyManagement />
-            </ProtectedRoute>
+            </AdminRoute>
           } />
 
           <Route path="/admin/bookings" element={
-            <ProtectedRoute user={user}>
+            <AdminRoute user={user} userRole={userRole}>
               <BookingManagement />
-            </ProtectedRoute>
+            </AdminRoute>
           } />
 
           <Route path="/admin/employees" element={
-            <ProtectedRoute user={user}>
+            <AdminRoute user={user} userRole={userRole}>
               <EmployeeManagement />
-            </ProtectedRoute>
+            </AdminRoute>
           } />
 
           <Route path="/admin/calendar" element={
-            <ProtectedRoute user={user}>
+            <AdminRoute user={user} userRole={userRole}>
               <AdminCalendar />
-            </ProtectedRoute>
+            </AdminRoute>
           } />
 
           <Route path="/admin/sales" element={
-            <ProtectedRoute user={user}>
+            <AdminRoute user={user} userRole={userRole}>
               <SalesReport />
-            </ProtectedRoute>
+            </AdminRoute>
           } />
 
           {/* FASE 3: Reportes */}
           <Route path="/admin/reports" element={
-            <ProtectedRoute user={user}>
+            <AdminRoute user={user} userRole={userRole}>
               <Reports />
-            </ProtectedRoute>
+            </AdminRoute>
           } />
 
           {/* RUTAS DE AGENTE */}
@@ -168,9 +195,28 @@ function App() {
 
           {/* RUTAS CRM */}
           <Route path="/admin/crm" element={
-            <ProtectedRoute user={user}>
+            <AdminRoute user={user} userRole={userRole}>
               <CRM />
+            </AdminRoute>
+          } />
+
+          <Route path="/agent/crm" element={
+            <ProtectedRoute user={user}>
+              <CRM filterByAgent />
             </ProtectedRoute>
+          } />
+
+          {/* RUTAS FINANCIERO */}
+          <Route path="/admin/financial" element={
+            <AdminRoute user={user} userRole={userRole}>
+              <FinancialControl />
+            </AdminRoute>
+          } />
+
+          <Route path="/admin/opportunities" element={
+            <AdminRoute user={user} userRole={userRole}>
+              <OpportunitiesReport />
+            </AdminRoute>
           } />
 
           {/* 404 */}

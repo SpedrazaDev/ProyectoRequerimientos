@@ -11,7 +11,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { collection, getDocs, query, orderBy, limit, where } from 'firebase/firestore';
 import { auth, db } from '../firebase';
-import { Home, Calendar, Clock, CheckCircle, Plus, ClipboardList, Globe, Mail } from 'lucide-react';
+import { Home, Calendar, Clock, CheckCircle, Plus, ClipboardList, Globe, Mail, DollarSign, TrendingUp, BarChart2 } from 'lucide-react';
 import './AdminDashboard.css';
 
 // Formato de fecha legible
@@ -30,6 +30,9 @@ function AdminDashboard() {
     pendingBookings: 0,
     confirmedBookings: 0,
     totalBookings: 0,
+    totalRevenue: 0,
+    totalSales: 0,
+    avgSale: 0,
   });
   const [recentBookings, setRecentBookings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -58,7 +61,14 @@ function AdminDashboard() {
         );
         const confirmedBookings = confirmedSnap.size;
 
-        setStats({ totalProperties, totalBookings, pendingBookings, confirmedBookings });
+        // 5. Resumen financiero
+        const salesSnap = await getDocs(collection(db, 'sales'));
+        const salesData = salesSnap.docs.map(d => d.data());
+        const totalSales   = salesData.length;
+        const totalRevenue = salesData.reduce((s, v) => s + (Number(v.saleAmount) || 0), 0);
+        const avgSale      = totalSales > 0 ? Math.round(totalRevenue / totalSales) : 0;
+
+        setStats({ totalProperties, totalBookings, pendingBookings, confirmedBookings, totalRevenue, totalSales, avgSale });
 
         // 5. ⚡ SOLO las 8 más recientes (RÁPIDO) ⚡
         let recentData = [];
@@ -164,6 +174,37 @@ function AdminDashboard() {
             </div>
             <Link to="/admin/bookings?status=confirmada" className="stat-card__link">Ver →</Link>
           </div>
+
+          <div className="stat-card stat-card--green">
+            <div className="stat-card__icon"><DollarSign size={28} /></div>
+            <div className="stat-card__body">
+              <span className="stat-card__label">Ingresos totales</span>
+              <span className="stat-card__value" style={{ fontSize: '1.2rem' }}>
+                {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(stats.totalRevenue)}
+              </span>
+            </div>
+            <Link to="/admin/financial" className="stat-card__link">Detalle →</Link>
+          </div>
+
+          <div className="stat-card stat-card--gold">
+            <div className="stat-card__icon"><TrendingUp size={28} /></div>
+            <div className="stat-card__body">
+              <span className="stat-card__label">Ventas cerradas</span>
+              <span className="stat-card__value">{stats.totalSales}</span>
+            </div>
+            <Link to="/admin/financial" className="stat-card__link">Ver →</Link>
+          </div>
+
+          <div className="stat-card stat-card--blue">
+            <div className="stat-card__icon"><BarChart2 size={28} /></div>
+            <div className="stat-card__body">
+              <span className="stat-card__label">Promedio por venta</span>
+              <span className="stat-card__value" style={{ fontSize: '1.2rem' }}>
+                {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(stats.avgSale)}
+              </span>
+            </div>
+            <Link to="/admin/financial" className="stat-card__link">Reportes →</Link>
+          </div>
         </div>
 
         {/* ── Accesos rápidos ── */}
@@ -184,6 +225,16 @@ function AdminDashboard() {
               <span className="quick-icon"><Globe size={22} /></span>
               <span className="quick-label">Ver sitio público</span>
               <span className="quick-arrow">↗</span>
+            </Link>
+            <Link to="/admin/financial" className="quick-card">
+              <span className="quick-icon"><DollarSign size={22} /></span>
+              <span className="quick-label">Control financiero</span>
+              <span className="quick-arrow">→</span>
+            </Link>
+            <Link to="/admin/opportunities" className="quick-card">
+              <span className="quick-icon"><TrendingUp size={22} /></span>
+              <span className="quick-label">Oportunidades de venta</span>
+              <span className="quick-arrow">→</span>
             </Link>
           </div>
         </div>

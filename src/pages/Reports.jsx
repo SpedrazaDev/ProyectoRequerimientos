@@ -204,6 +204,10 @@ function Reports() {
     ? Math.max(...filteredSales.map(s => s.saleAmount || 0))
     : 0;
 
+  const minSale = filteredSales.length > 0
+    ? Math.min(...filteredSales.map(s => s.saleAmount || 0))
+    : 0;
+
   const topAgent = agentStats.length > 0
     ? agentStats.reduce((best, a) => Number(a.ventas) > Number(best.ventas) ? a : best, agentStats[0])
     : null;
@@ -358,6 +362,16 @@ function Reports() {
             <div className="kpi-content">
               <span className="kpi-label">Récord de venta</span>
               <span className="kpi-value">{formatPrice(recordSale)}</span>
+            </div>
+          </div>
+
+          <div className="kpi-card kpi-card--blue">
+            <div className="kpi-icon">
+              <DollarSign size={28} />
+            </div>
+            <div className="kpi-content">
+              <span className="kpi-label">Venta más económica</span>
+              <span className="kpi-value">{formatPrice(minSale)}</span>
             </div>
           </div>
 

@@ -38,7 +38,57 @@
   color: var(--gold); padding: .38rem 1rem; border-radius: var(--radius-full);
   font-size: .75rem; font-weight: 700; letter-spacing: .09em; text-transform: uppercase;
   border: 1px solid rgba(201,168,76,.3);
+  z-index: 2;
 }
+
+/* Status badge */
+.detail-status-badge {
+  position: absolute; top: 20px; right: 20px;
+  padding: .38rem 1rem; border-radius: var(--radius-full);
+  font-size: .75rem; font-weight: 700; letter-spacing: .09em; text-transform: uppercase;
+  z-index: 2;
+}
+.detail-status-badge--disponible { background: rgba(39,174,96,.9);  color: #fff; }
+.detail-status-badge--reservada  { background: rgba(243,156,18,.9); color: #fff; }
+.detail-status-badge--vendida    { background: rgba(231,76,60,.9);  color: #fff; }
+
+/* ── Carousel ── */
+.carousel-btn {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  background: rgba(13,13,26,.65); backdrop-filter: blur(6px);
+  border: 1px solid rgba(255,255,255,.15); color: white;
+  width: 44px; height: 44px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; z-index: 3;
+  transition: background 0.2s, transform 0.15s;
+}
+.carousel-btn:hover { background: rgba(201,168,76,.85); transform: translateY(-50%) scale(1.08); }
+.carousel-btn--prev { left: 14px; }
+.carousel-btn--next { right: 14px; }
+
+.carousel-counter {
+  position: absolute; bottom: 14px; right: 16px;
+  background: rgba(13,13,26,.72); backdrop-filter: blur(6px);
+  color: white; font-size: .78rem; font-weight: 700;
+  padding: .25rem .7rem; border-radius: var(--radius-full);
+  z-index: 3; letter-spacing: .04em;
+}
+
+/* Miniaturas */
+.carousel-thumbs {
+  display: flex; gap: .55rem; flex-wrap: wrap;
+  margin-bottom: 1.75rem;
+}
+
+.carousel-thumb {
+  width: 72px; height: 52px; border-radius: 8px; overflow: hidden;
+  border: 2.5px solid transparent; cursor: pointer; padding: 0;
+  background: none; flex-shrink: 0;
+  transition: border-color 0.18s, transform 0.15s;
+}
+.carousel-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.carousel-thumb:hover { border-color: rgba(201,168,76,.6); transform: scale(1.04); }
+.carousel-thumb--active { border-color: var(--gold); }
 
 /* Info */
 .detail-info { background: var(--white); border-radius: var(--radius-xl); padding: 2.5rem; box-shadow: var(--shadow-sm); }
@@ -81,6 +131,24 @@
 .form-row        { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
 .field-error     { font-size: .73rem; color: var(--danger); margin-top: .15rem; }
 .booking-note    { text-align: center; font-size: .72rem; color: var(--gray-400); margin-top: .7rem; line-height: 1.45; }
+
+/* Forzar texto oscuro en el formulario — neutraliza estilos globales de páginas con fondo oscuro */
+.booking-form .form-group label {
+  color: var(--gray-600);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  font-size: .72rem;
+  font-weight: 700;
+}
+.booking-form .form-control {
+  color: var(--dark-2) !important;
+  background: var(--white) !important;
+  border-color: var(--gray-200);
+}
+.booking-form .form-control::placeholder {
+  color: var(--gray-400) !important;
+  opacity: 1;
+}
 
 .booking-contact { margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--gray-200); text-align: center; }
 .booking-contact p { font-size: .78rem; color: var(--gray-400); margin-bottom: .5rem; }

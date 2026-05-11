@@ -438,23 +438,23 @@
   margin-bottom: 1.25rem;
 }
 
-.form-group {
+.crm-page .form-group {
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
 }
 
-.form-group.full-width { grid-column: 1 / -1; }
+.crm-page .form-group.full-width { grid-column: 1 / -1; }
 
-.form-group label {
+.crm-page .form-group label {
   color: rgba(255,255,255,0.7);
   font-size: 0.85rem;
   font-weight: 500;
 }
 
-.form-group input,
-.form-group select,
-.form-group textarea {
+.crm-page .form-group input,
+.crm-page .form-group select,
+.crm-page .form-group textarea {
   padding: 0.65rem 0.75rem;
   background: rgba(255,255,255,0.06);
   border: 1px solid rgba(255,255,255,0.12);
@@ -464,15 +464,15 @@
   transition: border-color 0.2s;
 }
 
-.form-group input:focus,
-.form-group select:focus,
-.form-group textarea:focus {
+.crm-page .form-group input:focus,
+.crm-page .form-group select:focus,
+.crm-page .form-group textarea:focus {
   outline: none;
   border-color: var(--gold);
 }
 
-.form-group select option { background: #1c1c2e; }
-.form-group textarea { resize: vertical; font-family: inherit; }
+.crm-page .form-group select option { background: #1c1c2e; }
+.crm-page .form-group textarea { resize: vertical; font-family: inherit; }
 
 .modal-actions {
   display: flex;

@@ -1,132 +1,120 @@
 /* src/pages/SalesManagement.css */
-/* Estilos para registro simplificado de ventas */
 
-.sales-form-card {
-  background: white;
-  border: 1px solid #e0e0e0;
-  border-radius: 12px;
-  padding: 2rem;
-  max-width: 700px;
-  margin: 2rem auto;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-}
-
-.form-group {
+.sale-success-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: #e8f5e9;
+  border: 1px solid #a5d6a7;
+  color: #2e7d32;
+  padding: 0.9rem 1.25rem;
+  border-radius: 10px;
   margin-bottom: 1.5rem;
+  font-weight: 500;
 }
 
-.form-group label {
-  display: block;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 0.5rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.form-control {
-  width: 100%;
-  padding: 0.75rem;
-  border: 2px solid #e0e0e0;
-  border-radius: 8px;
-  font-size: 0.95rem;
-  transition: all 0.3s;
-  background: white;
-  color: #333;
-}
-
-.form-control:focus {
-  outline: none;
-  border-color: #c9a84c;
-  background: #fafafa;
-}
-
-.property-preview {
-  background: #f9f9f9;
-  border: 2px solid #e8e8e8;
-  border-radius: 12px;
-  padding: 1.5rem;
-  margin-top: 1.5rem;
-}
-
-.property-preview h3 {
-  font-size: 1rem;
-  font-weight: 700;
-  color: #333;
-  margin: 0 0 1rem 0;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.preview-details {
+.sale-form {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 1.5rem;
 }
 
-.preview-item {
+.sale-section {
+  background: white;
+  border: 1px solid #e8e8ed;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+}
+
+.sale-section-title {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 0.5rem 0;
-  border-bottom: 1px solid #e8e8e8;
+  gap: 0.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--dark-2);
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid var(--gray-200);
 }
 
-.preview-item:last-child {
-  border-bottom: none;
+.sale-section-title svg {
+  color: var(--gold);
 }
 
-.preview-item strong {
-  color: #666;
-  font-size: 0.9rem;
+.sale-form-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.sale-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.sale-form-group.full {
+  grid-column: 1 / -1;
+}
+
+.sale-form-group label {
+  font-size: 0.85rem;
   font-weight: 600;
+  color: var(--gray-600);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
-.preview-item span {
-  color: #333;
+.sale-form-group input,
+.sale-form-group select,
+.sale-form-group textarea {
+  padding: 0.65rem 0.85rem;
+  border: 1.5px solid var(--gray-200);
+  border-radius: 8px;
   font-size: 0.95rem;
+  color: var(--dark-2);
+  background: var(--gray-100);
+  transition: border-color 0.2s, background 0.2s;
 }
 
-.price-highlight {
-  font-size: 1.25rem !important;
-  font-weight: 700 !important;
-  color: #c9a84c !important;
+.sale-form-group input:focus,
+.sale-form-group select:focus,
+.sale-form-group textarea:focus {
+  outline: none;
+  border-color: var(--gold);
+  background: #fff;
 }
 
-.btn-success {
-  background: #27ae60;
-  color: white;
-  border: none;
+.sale-form-group textarea {
+  resize: vertical;
+  font-family: inherit;
 }
 
-.btn-success:hover:not(:disabled) {
-  background: #229954;
+.property-preview-bar {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  padding: 0.75rem 1rem;
+  background: var(--gray-100);
+  border-radius: 8px;
+  margin-top: 0.75rem;
+  font-size: 0.88rem;
+  color: var(--gray-600);
 }
 
-.btn-success:disabled {
-  background: #ccc;
-  cursor: not-allowed;
-}
-
-.btn-block {
-  width: 100%;
+.sale-submit {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
+  padding: 0.9rem;
+  font-size: 1rem;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .sales-form-card {
-    padding: 1.5rem;
-    margin: 1rem;
-  }
-
-  .preview-item {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.25rem;
+@media (max-width: 640px) {
+  .sale-form-row {
+    grid-template-columns: 1fr;
   }
 }

@@ -1,0 +1,239 @@
+/* src/pages/OpportunitiesReport.css */
+
+.opp-header {
+  margin-bottom: 2rem;
+}
+
+.opp-section {
+  background: white;
+  border-radius: 14px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  margin-bottom: 2rem;
+}
+
+.opp-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.opp-section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--dark-2);
+  margin: 0;
+}
+
+.opp-section-title svg { color: var(--gold); }
+
+.opp-badge {
+  padding: 0.3rem 0.85rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.opp-badge--warning {
+  background: #fff3cd;
+  color: #856404;
+}
+
+/* ── Tabla citas ── */
+.opp-table-wrap { overflow-x: auto; }
+
+.opp-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.opp-table th {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: white;
+  background: var(--dark-2);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.opp-table td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid #f0f0f5;
+  font-size: 0.9rem;
+  color: #333;
+  vertical-align: middle;
+}
+
+.opp-table tbody tr:hover { background: #fafafa; }
+
+.opp-client strong { display: block; }
+.opp-client small  { color: #888; font-size: 0.82rem; }
+
+.opp-days {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-weight: 600;
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+  background: #f0f0f5;
+  color: #555;
+  font-size: 0.85rem;
+}
+
+.opp-days--warn   { background: #fff3cd; color: #856404; }
+.opp-days--urgent { background: #ffebee; color: #c62828; }
+
+.opp-follow-badge {
+  display: inline-block;
+  padding: 0.25rem 0.65rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.opp-follow-badge.normal { background: #e3f2fd; color: #1565c0; }
+.opp-follow-badge.warn   { background: #fff3cd; color: #856404; }
+.opp-follow-badge.urgent { background: #ffebee; color: #c62828; }
+
+/* ── Filtros probabilidad ── */
+.opp-prob-filters {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.opp-prob-filters svg { color: #888; }
+
+.opp-filter-btn {
+  padding: 0.3rem 0.75rem;
+  border: 1.5px solid var(--gray-200);
+  border-radius: 999px;
+  background: white;
+  color: #666;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.opp-filter-btn:hover { border-color: var(--gold); color: var(--dark-2); }
+.opp-filter-btn.active { background: var(--gold); border-color: var(--gold); color: white; }
+
+/* ── Grid de leads ── */
+.opp-leads-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.opp-lead-card {
+  border: 1.5px solid var(--gray-200);
+  border-radius: 12px;
+  padding: 1.1rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.opp-lead-card:hover {
+  border-color: var(--gold);
+  box-shadow: 0 4px 16px rgba(201,168,76,0.12);
+}
+
+.opp-lead-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.85rem;
+}
+
+.opp-lead-top h4 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--dark-2);
+  margin: 0 0 0.15rem;
+}
+
+.opp-lead-top small { color: #888; font-size: 0.82rem; }
+
+.opp-prob-ring {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  border: 3px solid var(--prob-color, #ccc);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.opp-prob-ring span {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--prob-color, #ccc);
+}
+
+.opp-lead-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.85rem;
+  align-items: center;
+}
+
+.opp-stage-badge {
+  padding: 0.2rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.opp-prop {
+  font-size: 0.85rem;
+  color: #555;
+}
+
+.opp-value {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #27ae60;
+}
+
+.opp-lead-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--gray-200);
+}
+
+.opp-updated { font-size: 0.78rem; color: #aaa; }
+
+.opp-empty {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #aaa;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.opp-empty p { font-size: 0.95rem; margin: 0; }
+
+@media (max-width: 768px) {
+  .opp-table { min-width: 700px; }
+  .opp-section-header { flex-direction: column; align-items: flex-start; }
+  .opp-leads-grid { grid-template-columns: 1fr; }
+}

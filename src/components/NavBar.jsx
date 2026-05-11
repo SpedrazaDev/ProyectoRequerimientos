@@ -8,7 +8,7 @@ import { auth, db } from '../firebase';
 import {
   Home, LogOut, LayoutDashboard, Building2, Calendar as CalendarIcon,
   Users, MessageSquare, DollarSign, Menu, X, BarChart3,
-  Clock, BanIcon
+  Clock, BanIcon, TrendingUp
 } from 'lucide-react';
 import './Navbar.css';
 
@@ -179,6 +179,22 @@ function Navbar({ adminUser }) {
                 CRM
               </Link>
               <Link
+                to="/admin/financial"
+                className={`navbar__link ${isActive('/admin/financial') ? 'navbar__link--active' : ''}`}
+                onClick={closeMenu}
+              >
+                <DollarSign size={12} />
+                Finanzas
+              </Link>
+              <Link
+                to="/admin/opportunities"
+                className={`navbar__link ${isActive('/admin/opportunities') ? 'navbar__link--active' : ''}`}
+                onClick={closeMenu}
+              >
+                <TrendingUp size={12} />
+                Oportunidades
+              </Link>
+              <Link
                 to="/admin/employees"
                 className={`navbar__link ${isActive('/admin/employees') ? 'navbar__link--active' : ''}`}
                 onClick={closeMenu}
@@ -241,6 +257,14 @@ function Navbar({ adminUser }) {
               >
                 <BanIcon size={12} />
                 Días Bloqueados
+              </Link>
+              <Link
+                to="/agent/crm"
+                className={`navbar__link ${isActive('/agent/crm') ? 'navbar__link--active' : ''}`}
+                onClick={closeMenu}
+              >
+                <Users size={12} />
+                Mi CRM
               </Link>
               <button className="navbar__link navbar__link--logout" onClick={handleLogout}>
                 <LogOut size={12} />

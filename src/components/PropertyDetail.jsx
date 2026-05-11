@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { doc, getDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
-import { ChevronLeft, Home, MapPin, Bed, Bath, Maximize, Car, Phone, Mail, Lock, Calendar, Clock } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Home, MapPin, Bed, Bath, Maximize, Car, Phone, Mail, Lock, Calendar, Clock } from 'lucide-react';
 import './PropertyDetail.css';
 
 const formatPrice = (price) =>
@@ -28,6 +28,7 @@ function PropertyDetail() {
   const [formErrors,   setFormErrors]   = useState({});
   const [submitting,   setSubmitting]   = useState(false);
   const [submitted,    setSubmitted]    = useState(false);
+  const [imgIndex,     setImgIndex]     = useState(0);
 
   useEffect(() => {
     const fetch = async () => {
@@ -126,7 +127,13 @@ function PropertyDetail() {
     );
   }
 
-  const firstImage = Array.isArray(property.images) ? property.images[0] : (property.imageUrl || '');
+  const images = Array.isArray(property.images) && property.images.length > 0
+    ? property.images
+    : property.imageUrl ? [property.imageUrl] : [];
+  const hasMany = images.length > 1;
+
+  const prevImg = () => setImgIndex(i => (i - 1 + images.length) % images.length);
+  const nextImg = () => setImgIndex(i => (i + 1) % images.length);
 
   return (
     <div className="detail-page">
@@ -148,18 +155,61 @@ function PropertyDetail() {
         {/* Columna izquierda */}
         <div className="detail-left">
 
-          {/* Imagen */}
+          {/* Carrusel de imágenes */}
           <div className="detail-image-wrap">
-            {firstImage ? (
-              <img src={firstImage} alt={property.title} className="detail-image" loading="lazy" />
+            {images.length > 0 ? (
+              <img
+                src={images[imgIndex]}
+                alt={`${property.title} — foto ${imgIndex + 1}`}
+                className="detail-image"
+                loading="lazy"
+              />
             ) : (
               <div className="detail-image-placeholder">
                 <Home size={64} strokeWidth={1.5} />
                 <p>Sin imagen disponible</p>
               </div>
             )}
+
             <div className="detail-type-badge">{property.type}</div>
+
+            {property.status && (
+              <div className={`detail-status-badge detail-status-badge--${property.status}`}>
+                {property.status === 'disponible' ? 'Disponible'
+                  : property.status === 'reservada' ? 'Reservada'
+                  : property.status === 'vendida'   ? 'Vendida'
+                  : property.status}
+              </div>
+            )}
+
+            {hasMany && (
+              <>
+                <button className="carousel-btn carousel-btn--prev" onClick={prevImg} aria-label="Foto anterior">
+                  <ChevronLeft size={22} />
+                </button>
+                <button className="carousel-btn carousel-btn--next" onClick={nextImg} aria-label="Foto siguiente">
+                  <ChevronRight size={22} />
+                </button>
+                <div className="carousel-counter">{imgIndex + 1} / {images.length}</div>
+              </>
+            )}
           </div>
+
+          {/* Miniaturas */}
+          {hasMany && (
+            <div className="carousel-thumbs">
+              {images.map((src, i) => (
+                <button
+                  key={i}
+                  className={`carousel-thumb ${i === imgIndex ? 'carousel-thumb--active' : ''}`}
+                  onClick={() => setImgIndex(i)}
+                  aria-label={`Foto ${i + 1}`}
+                >
+                  <img src={src} alt={`miniatura ${i + 1}`} />
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* Info */}
           <div className="detail-info">

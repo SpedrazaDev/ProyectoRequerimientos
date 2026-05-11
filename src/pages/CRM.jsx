@@ -3,9 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import {
   collection, onSnapshot, addDoc, updateDoc, doc,
-  serverTimestamp, query, orderBy
+  serverTimestamp, query, orderBy, where
 } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, auth } from '../firebase';
 import {
   Users, Plus, Eye, TrendingUp, Clock,
   Phone, Mail, MapPin, Building2, X, DollarSign, CheckCircle
@@ -32,7 +32,9 @@ const EMPTY_FORM = {
   budget: '', estimatedValue: '', probability: '50',
 };
 
-function CRM() {
+function CRM({ filterByAgent = false }) {
+  const agentEmail = filterByAgent ? (auth.currentUser?.email || null) : null;
+
   const [leads, setLeads] = useState([]);
   const [properties, setProperties] = useState([]);
   const [expandedLead, setExpandedLead] = useState(null);
@@ -43,7 +45,9 @@ function CRM() {
   const [interactionData, setInteractionData] = useState({ type: 'call', notes: '', outcome: '' });
 
   useEffect(() => {
-    const q = query(collection(db, 'leads'), orderBy('createdAt', 'desc'));
+    const q = agentEmail
+      ? query(collection(db, 'leads'), where('agentEmail', '==', agentEmail), orderBy('createdAt', 'desc'))
+      : query(collection(db, 'leads'), orderBy('createdAt', 'desc'));
     const unsub = onSnapshot(q, snap => {
       setLeads(snap.docs.map(d => ({
         id: d.id, ...d.data(),
@@ -52,7 +56,7 @@ function CRM() {
       })));
     });
     return () => unsub();
-  }, []);
+  }, [agentEmail]);
 
   useEffect(() => {
     const unsub = onSnapshot(collection(db, 'properties'), snap => {
@@ -94,6 +98,7 @@ function CRM() {
         probability:    Number(formData.probability) || 50,
         notes:          formData.notes.trim(),
         interactions:   [],
+        agentEmail:     agentEmail || null,
         createdAt:      serverTimestamp(),
         updatedAt:      serverTimestamp(),
       });
@@ -157,7 +162,7 @@ function CRM() {
         {/* Header */}
         <div className="crm-header">
           <div>
-            <h1>CRM — Gestión de Leads</h1>
+            <h1>{filterByAgent ? 'Mi CRM — Mis Leads' : 'CRM — Gestión de Leads'}</h1>
             <p>{leads.length} lead{leads.length !== 1 ? 's' : ''} en seguimiento</p>
           </div>
           <button onClick={() => setShowModal(true)} className="btn-primary">
@@ -352,9 +357,11 @@ function CRM() {
                   <select value={formData.propertyId}
                     onChange={e => setFormData({ ...formData, propertyId: e.target.value })} required>
                     <option value="">Seleccionar...</option>
-                    {properties.map(p => (
-                      <option key={p.id} value={p.id}>{p.title} — ${p.price?.toLocaleString()}</option>
-                    ))}
+                    {properties
+                      .filter(p => p.status !== 'vendida')
+                      .map(p => (
+                        <option key={p.id} value={p.id}>{p.title} — ${p.price?.toLocaleString()}</option>
+                      ))}
                   </select>
                 </div>
                 <div className="form-group">
